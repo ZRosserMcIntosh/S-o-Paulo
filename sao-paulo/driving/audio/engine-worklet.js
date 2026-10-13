@@ -1,5 +1,5 @@
-// Flat-plane-crank V8 engine synthesizer (AudioWorklet). Voicing: Ferrari 458 / Porsche GT3 RS
-// territory - a beefy, loping idle that cleans up into a hard, raspy wail at 11,000 rpm.
+// Flat-plane-crank V8 engine synthesizer (AudioWorklet). This is the original voice; the only
+// changes since are the dropout fix (DC block before the clipper) and faster parameter tracking.
 // Physically inspired: every combustion event is a pressure pulse sent down one of the two
 // exhaust banks (flat-plane cranks alternate banks, so each bank sees evenly spaced pulses -
 // the source of the high, smooth "scream"). Pulses ring a set of pipe resonances and a
@@ -19,8 +19,8 @@ class EngineSynth {
     this.rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     // Per-cylinder character: small, fixed differences in pulse strength and timing give the
     // half-order "burble" at low rpm that a perfectly even pulse train would not have.
-    this.cylAmp = Array.from({ length: 8 }, () => 0.8 + 0.4 * this.rand());
-    this.cylTime = Array.from({ length: 8 }, () => (this.rand() - 0.5) * 0.01);
+    this.cylAmp = Array.from({ length: 8 }, () => 0.9 + 0.2 * this.rand());
+    this.cylTime = Array.from({ length: 8 }, () => (this.rand() - 0.5) * 0.006);
     this.phase = 0; // 0..1 per four-stroke cycle (two crank revolutions)
     this.nextEvent = 0;
     this.rpm = 1000; this.load = 0; this.cutS = 0;
@@ -28,7 +28,7 @@ class EngineSynth {
     // Two exhaust banks, each with its own resonators (slightly detuned = stereo width).
     const mk = (f, tau, g) => ({ f, tau, g, y1: 0, y2: 0, a1: 0, a2: 0 });
     this.banks = [0, 1].map((b) => ({
-      res: [mk(58 + b * 4, 0.03, 0.8), mk(92 + b * 6, 0.016, 0.9), mk(300 + b * 14, 0.007, 0.55), mk(690 + b * 25, 0.0045, 0.5), mk(1480 + b * 60, 0.003, 0.32), mk(3100 + b * 120, 0.0016, 0.16)],
+      res: [mk(92 + b * 6, 0.016, 0.9), mk(300 + b * 14, 0.007, 0.55), mk(690 + b * 25, 0.0045, 0.5), mk(1480 + b * 60, 0.003, 0.32), mk(3100 + b * 120, 0.0016, 0.16)],
       comb: new Float32Array(4096), ci: 0, combLen: Math.round(sr * (0.0093 + b * 0.0004)),
       exc: 0, excLeft: 0, excAmp: 0,
       hp: 0, hpx: 0, lp: 0, zx: 0, zh: 0,
@@ -93,21 +93,17 @@ class EngineSynth {
       // Firing events: 8 per cycle, even spacing, banks alternate (flat-plane).
       // Event times are kept to a fraction of a sample: rounding them would smear the
       // high harmonics into noise at high rpm.
-      const tScale = Math.max(0.15, 1 - rpmN);
-      while (this.nextEvent < 8 && this.phase >= this.nextEvent / 8 + this.cylTime[this.nextEvent] * tScale) {
+      while (this.nextEvent < 8 && this.phase >= this.nextEvent / 8 + this.cylTime[this.nextEvent]) {
         const c = this.nextEvent;
-        const ago = (this.phase - (c / 8 + this.cylTime[c] * tScale)) / dp; // samples since the event
+        const ago = (this.phase - (c / 8 + this.cylTime[c])) / dp; // samples since the event
         this.nextEvent++;
         const bk = this.banks[c & 1];
         const cutNow = Math.max(this.cutS, limiterCut);
         // Combustion strength: strong on load, weak pumping pulses when coasting.
-        const lope = Math.max(0, 1 - rpmN * 1.6); // uneven, loping pulses at idle, even at speed
-        let e = (0.22 + 0.78 * Math.pow(load, 0.8)) * (1 + (this.cylAmp[c] - 1) * lope) * (0.98 + 0.04 * this.rand());
+        let e = (0.14 + 0.86 * Math.pow(load, 0.8)) * this.cylAmp[c] * (0.98 + 0.04 * this.rand());
         if (cutNow > 0.5) e = 0.1 * this.cylAmp[c];
         // Overrun: unburnt fuel popping in the exhaust when lifting at high rpm.
-        if (load < 0.08 && rpm > 2800 && this.decel > 200 && this.rand() < 0.05 + 0.1 * Math.min(1, this.decel / 4000)) this.pop = 0.7 + 0.8 * this.rand();
-        // burble: occasional weak/strong pulses on a closed throttle
-        if (load < 0.08 && rpm > 2000) e *= 0.5 + 1.1 * this.rand();
+        if (load < 0.08 && rpm > 3200 && this.decel > 300 && this.rand() < 0.035 + 0.08 * Math.min(1, this.decel / 4000)) this.pop = 0.6 + 0.7 * this.rand();
         if (cutNow > 0.5 && this.rand() < 0.3) this.pop = Math.max(this.pop, 0.5 * this.rand() + 0.3);
         bk.pulses.push(this.t - ago, e);
         this.ik.push(this.t - ago, e);
@@ -126,9 +122,8 @@ class EngineSynth {
         const d = bk.comb[(bk.ci - bk.combLen + 4096) & 4095];
         const z = y - 0.35 * d;
         bk.comb[bk.ci] = z; bk.ci = (bk.ci + 1) & 4095;
-        // Remove the DC the one-sided pressure pulses build up in the low resonances *before*
-        // saturation; otherwise dense pulse trains at higher rpm push the clipper into a flat
-        // rail and the engine sound drops out.
+        // Remove the DC the one-sided pressure pulses build up in the low resonances before the
+        // clipper; otherwise dense pulse trains rail it and the sound drops out in some rpm bands.
         const zh = z - bk.zx + 0.996 * bk.zh; bk.zx = z; bk.zh = zh;
         out[b] = zh;
       }
@@ -153,16 +148,14 @@ class EngineSynth {
         let v = Math.max(-1, Math.min(1, out[b] * drive * 0.9));
         v = (1.5 * v - 0.5 * v * v * v) * 1.4;
         // cabin: muffle the exhaust
-        // Tone tilt: darker at low rpm, opening up with revs, but never thin (no motorcycle buzz).
-        const open = Math.min(0.95, 0.32 + 0.45 * rpmN + 0.12 * load);
-        const cut = open * (0.2 + 0.8 * (1 - inter));
+        const cut = 0.16 + 0.84 * (1 - inter) ;
         bk.lp += (v - bk.lp) * cut;
         v = bk.lp + ik * 0.6 + wh + air;
         // DC / sub-sonic block
         const hp = v - bk.hpx + 0.995 * bk.hp; bk.hpx = v; bk.hp = hp;
         out[b] = hp;
       }
-      const loud = 0.42 * (0.78 + 0.22 * Math.min(1, rpmN * 1.3));
+      const loud = 0.42 * (0.55 + 0.45 * Math.min(1, rpmN * 1.3));
       L[i] = Math.tanh((out[0] * 0.72 + out[1] * 0.28) * loud);
       R[i] = Math.tanh((out[1] * 0.72 + out[0] * 0.28) * loud);
     }
@@ -262,4 +255,5 @@ if (typeof registerProcessor !== 'undefined') {
   });
 }
 if (typeof module !== 'undefined') module.exports = { EngineSynth, TyreSynth };
+
 

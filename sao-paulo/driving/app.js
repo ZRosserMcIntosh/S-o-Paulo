@@ -26,7 +26,7 @@ const HEADER = M._ord_state_header(), PER_WHEEL = M._ord_state_per_wheel();
 const statePtr = M._ord_state() / 8;
 const S = (i) => M.HEAPF64[statePtr + i];
 const W = (w, i) => M.HEAPF64[statePtr + HEADER + PER_WHEEL * w + i];
-const LIMITER = [7200, 6500, 6800, 8500, 12500, 11000];
+const LIMITER = [7200, 6500, 6800, 8500, 12500, 9000];
 const G = 9.81;
 
 // ISO 8855 (x forward, y left, z up) -> three.js (y up): (x, z, -y)
@@ -687,7 +687,7 @@ function buildTach() {
   const ang = (r) => TACH.a0 + (TACH.a1 - TACH.a0) * (r / max);
   const pt = (deg, rad) => [Math.cos((deg * Math.PI) / 180) * rad, Math.sin((deg * Math.PI) / 180) * rad];
   const arc = (r0, r1, rad) => { const [x0, y0] = pt(ang(r0), rad), [x1, y1] = pt(ang(r1), rad); return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${rad} ${rad} 0 ${ang(r1) - ang(r0) > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
-  const big = max <= 9000 ? 1000 : 2000, small = big / 4;
+  const big = max <= 10000 ? 1000 : 2000, small = big / 4;
   let ticks = '', nums = '';
   for (let r = 0; r <= max + 1; r += small) {
     const major = r % big === 0, [xa, ya] = pt(ang(r), major ? 37 : 40), [xb, yb] = pt(ang(r), 44.5);
