@@ -908,8 +908,25 @@ function resetSkidTrail() { skid.last = [null, null, null, null]; }
     };
   }
   if (MOBILE && innerHeight > innerWidth) setTimeout(() => toast('Tip: turn your phone sideways for a wider view'), 1500);
-  // no pinch-zoom / double-tap zoom of the page itself (the canvas handles its own pinch)
-  addEventListener('gesturestart', (e) => e.preventDefault());
+  // No pinch-zoom / double-tap zoom of the page itself (the canvas handles its own pinch through
+  // pointer events). iOS Safari ignores user-scalable=no, so block the gestures directly...
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1 || (e.scale !== undefined && e.scale !== 1)) e.preventDefault();
+  }, { passive: false });
+  // ...and if the page does end up zoomed anyway, snap it back to 1:1 by re-applying the viewport.
+  const meta = document.querySelector('meta[name=viewport]');
+  const base = meta?.content || '';
+  const vv = window.visualViewport;
+  if (vv && meta) {
+    let fixing = false;
+    vv.addEventListener('resize', () => {
+      if (fixing || vv.scale <= 1.01) return;
+      fixing = true;
+      meta.content = base.replace('initial-scale=1', 'initial-scale=1.0001');
+      requestAnimationFrame(() => { meta.content = base; fixing = false; });
+    });
+  }
   let lastTap = 0;
   addEventListener('touchend', (e) => { const n = Date.now(); if (n - lastTap < 320 && !(e.target instanceof Element && e.target.closest('button,input,select,a'))) e.preventDefault(); lastTap = n; }, { passive: false });
 }
