@@ -73,7 +73,7 @@ const SKY = new THREE.Color('#9fb8d3');
 scene.background = SKY;
 scene.fog = new THREE.Fog(SKY, 180, 900);
 const camera = new THREE.PerspectiveCamera(60, 1, 0.2, 2000);
-scene.add(new THREE.HemisphereLight('#dbe8ff', '#4a4136', 1.4));
+scene.add(new THREE.HemisphereLight('#dbe8ff', '#4a4136', 0.9));
 const sun = new THREE.DirectionalLight('#fff4e0', 2.4);
 sun.castShadow = true;
 sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
@@ -81,6 +81,29 @@ Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, n
 sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
 const SUN_DIR = new THREE.Vector3(-0.5, 1, 0.35).normalize();
+sun.shadow.normalBias = 0.03; // no shadow acne (black speckles) on the car's curved panels
+
+// Outdoor reflection environment, baked once: sky gradient, bright horizon, dark asphalt below and
+// a hot sun. Every PBR material reflects it, which is what makes metallic paint and chrome read
+// as metal instead of flat plastic.
+{
+  const env = new THREE.Scene();
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(50, 64, 32), new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false,
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `varying vec3 vP; void main(){
+      float y = vP.y;
+      vec3 zen = vec3(0.16, 0.30, 0.62), hor = vec3(0.80, 0.86, 0.92), gnd = vec3(0.05, 0.05, 0.055);
+      vec3 c = y > 0.0 ? mix(hor, zen, pow(y, 0.55)) : mix(hor * 0.45, gnd, pow(-y, 0.35));
+      gl_FragColor = vec4(c, 1.0); }`,
+  })));
+  const sunBall = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.95, 0.86).multiplyScalar(30) }));
+  sunBall.position.copy(SUN_DIR).multiplyScalar(45);
+  env.add(sunBall);
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(env, 0.02).texture;
+  pm.dispose();
+}
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -395,6 +418,7 @@ async function loadModel(buffer, name, announce = true) {
   inner.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   model = { wrapper, rigs, hasWheels, turn };
   setupLights(inner);
+  setupPaint(inner);
   placeholder.visible = false;
   $('modelNote').innerHTML = `Driving <b>${escapeHtml(name)}</b> (${size.x.toFixed(2)} × ${size.z.toFixed(2)} m). ` +
     (hasWheels ? 'Wheels found and animated from the physics.' : 'No separate wheel objects found (name them “Wheel_FL”, “Tire_RR”…, to animate them).');
@@ -423,6 +447,41 @@ addEventListener('drop', (e) => {
   e.preventDefault(); dragDepth = 0; $('drop').classList.remove('on');
   const f = e.dataTransfer?.files?.[0]; if (f) loadModelFile(f);
 });
+
+// ---------- Paint ----------
+// Metallic blue with a clearcoat, in the spirit of Alfa Romeo Misano Blue: dark blue base, metal
+// flakes (a fine random normal map under the clearcoat) and a mirror-smooth lacquer on top.
+// The body panels arrive as the untextured "StellaPaint" material (split from the scan's atlas).
+const PAINT_MATS = /^(StellaPaint|BodyPaintPatch)$/;
+let paintMat = null;
+function flakeNormalMap() {
+  const n = 256, d = new Uint8Array(n * n * 4);
+  for (let i = 0; i < n * n; ++i) {
+    const a = Math.random() * Math.PI * 2, r = Math.random() * 0.55;
+    d[i * 4] = 128 + 127 * r * Math.cos(a); d[i * 4 + 1] = 128 + 127 * r * Math.sin(a); d[i * 4 + 2] = 255; d[i * 4 + 3] = 255;
+  }
+  const t = new THREE.DataTexture(d, n, n); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 40);
+  t.magFilter = THREE.NearestFilter; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.needsUpdate = true;
+  return t;
+}
+function setupPaint(root) {
+  paintMat ??= new THREE.MeshPhysicalMaterial({
+    name: 'StellaPaint', color: new THREE.Color('#0B2C7A'), metalness: 0.7, roughness: 0.38,
+    clearcoat: 1, clearcoatRoughness: 0.03, normalMap: flakeNormalMap(), normalScale: new THREE.Vector2(0.18, 0.18),
+    envMapIntensity: 1.25,
+  });
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    // What's left of the scanned body after the paint split is trim, glass surrounds, intakes and
+    // the cabin: dark satin, not metal.
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (/^(tripo_material|CarPaintClean)/.test(m?.name || '')) { m.metalness = 0.05; m.roughness = 0.5; m.clearcoat = 0.4; m.clearcoatRoughness = 0.1; }
+      if (m?.name === 'WheelDiamondFace') m.envMapIntensity = 0.6;
+    }
+    if (Array.isArray(o.material)) o.material = o.material.map((m) => (PAINT_MATS.test(m?.name || '') ? paintMat : m));
+    else if (PAINT_MATS.test(o.material?.name || '')) o.material = paintMat;
+  });
+}
 
 // ---------- Tail and brake lights ----------
 // Tail lamps glow whenever the car is on; braking brightens them and lights the centre brake bar.
@@ -455,6 +514,9 @@ function updateLights(brake) {
   if (phTail) phTail.emissiveIntensity = 0.5 + 2.5 * b;
 }
 let phTail = null;
+
+// The track itself shouldn't mirror the sky: keep its reflections subtle.
+scene.traverse((o) => { if (o.isMesh && o.material?.isMeshStandardMaterial) o.material.envMapIntensity = 0.3; });
 
 // ---------- Create car ----------
 const ZONES = [
@@ -510,6 +572,18 @@ $('aAbs').onclick = () => { settings.abs = !settings.abs; applyAids(); };
 $('aTcs').onclick = () => { settings.tcs = (settings.tcs + 1) % 3; applyAids(); };
 $('aEsc').onclick = () => { settings.esc = (settings.esc + 1) % 3; applyAids(); };
 $('aBox').onclick = () => { settings.auto = !settings.auto; applyAids(); };
+// Paddle shifts (+ / − keys, the on-screen − / + buttons): the first press switches the box to
+// manual, like pulling a paddle on a dual-clutch car. G (or the Auto gearbox button) goes back.
+function paddle(dir) {
+  if (settings.auto) { settings.auto = false; applyAids(); toast('Manual gearbox · G for automatic'); }
+  if (dir > 0) edge.up = true; else edge.down = true;
+}
+for (const [id, dir] of [['tUp', 1], ['tDown', -1]]) {
+  const el = $(id);
+  el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.classList.add('on'); paddle(dir); });
+  const up = () => el.classList.remove('on');
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+}
 $('car').value = settings.car;
 $('car').onchange = (e) => { settings.car = +e.target.value; store.set('car', settings.car); store.set('stellaPhysics', true); createCar(); e.target.blur(); };
 $('bReset').onclick = (e) => { placeAt(ZONES[0]); e.currentTarget.blur(); };
@@ -534,6 +608,8 @@ addEventListener('keydown', (e) => {
   keys.add(k);
   if (k === 'e') edge.up = true;
   if (k === 'q') edge.down = true;
+  if (k === '+' || k === '=') { e.preventDefault(); paddle(1); }
+  if (k === '-' || k === '_') { e.preventDefault(); paddle(-1); }
   if (k === 'r') placeAt(ZONES[0]);
   if (k === 'c') cycleCam();
   if (k === 'h') togglePanel();
@@ -979,7 +1055,7 @@ createCar();
 const MODEL_URL = MOBILE ? 'models/car_mobile.glb' : 'models/car.glb';
 const savedModel = await fetch(MODEL_URL, { method: 'HEAD' }).then((r) => (r.ok ? true : false)).catch(() => false);
 if (savedModel) {
-  try { await loadModel(await (await fetch(MODEL_URL)).arrayBuffer(), 'Rosser Stella V8', false); }
+  try { await loadModel(await (await fetch(MODEL_URL)).arrayBuffer(), 'Rosser V8', false); }
   catch (e) { console.warn('models/car.glb failed to load', e); }
 }
 $('loading').remove();
@@ -1012,7 +1088,7 @@ function frame(now) {
   updateHud(dt, inp);
   updateLights(S(15) === -1 ? 0 : inp.brake);
   updateSkids();
-  audio.update({ dt, rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), tyre: tyreState(), interior: settings.cam === 2 });
+  try { audio.update({ dt, rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), tyre: tyreState(), interior: settings.cam === 2 }); } catch (e) { console.warn('audio update', e); }
   recordRow();
   const z = zoneAt(S(0), S(1));
   if (z !== currentZone) { currentZone = z; $('zone').textContent = z; $('zone').classList.toggle('on', !!z); }

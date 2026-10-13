@@ -87,14 +87,17 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   .tbtn.on{background:rgba(255,255,255,.3)}
   #tGas{right:calc(16px + env(safe-area-inset-right))}#tBrake{right:calc(112px + env(safe-area-inset-right));height:84px}
   #tHand{right:calc(112px + env(safe-area-inset-right));bottom:112px;height:56px;font-size:14px}
+  .tshift{width:60px;height:52px;font-size:26px;bottom:112px}
+  #tDown{left:calc(16px + env(safe-area-inset-left))}
+  #tUp{left:calc(84px + env(safe-area-inset-left))}
   #tSteer{margin-left:env(safe-area-inset-left)}
   #side{max-height:calc(100% - 80px);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   #side input,#side select{touch-action:manipulation}
   #tSteer{position:fixed;left:16px;bottom:18px;width:min(calc(100vw - 236px),260px);height:84px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);z-index:3;touch-action:none}
   #tSteer i{position:absolute;top:8px;bottom:8px;width:34px;left:calc(50% - 17px);border-radius:10px;background:rgba(255,255,255,.55)}
-  #hud{bottom:118px}
+  #hud{bottom:170px}
   #hud .wheels,#hud .timers,#hud .panel:has(.gg){display:none}
-  .speed{font-size:44px}.gear{width:36px;height:36px;font-size:26px}.tach{width:118px;height:118px}
+  .speed{font-size:44px}.gear{width:36px;height:36px;font-size:26px}.tach{width:100px;height:100px}
   #side{width:min(300px,calc(100% - 24px))}
 }
 /* phones held upright: HUD moves to the top so the thumbs area stays clear */
@@ -109,6 +112,7 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   .tach{width:104px;height:104px}
   .speed{font-size:38px}
   #tHand{bottom:calc(140px + env(safe-area-inset-bottom))}
+  .tshift{bottom:calc(140px + env(safe-area-inset-bottom))}
   .tbtn,#tSteer{margin-bottom:env(safe-area-inset-bottom)}
 }
 @media (max-width:640px){.speed{font-size:48px}.gg{display:none}.timers{display:none}}
@@ -132,7 +136,7 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   <h2>Car</h2>
   <div class="row">
     <select id="car" aria-label="Car">
-      <option value="5">Rosser Stella V8 · 9,000 rpm</option>
+      <option value="5">Rosser V8 · 9,000 rpm</option>
       <option value="0">Sports RWD · 300 kW · 1450 kg</option>
       <option value="1">Hatch FWD · 130 kW · 1250 kg</option>
       <option value="2">Saloon AWD · 1600 kg</option>
@@ -182,7 +186,7 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
     <span><kbd>S</kbd> <kbd>↓</kbd></span><span>Brake (reverse when stopped)</span>
     <span><kbd>A</kbd><kbd>D</kbd> <kbd>←</kbd><kbd>→</kbd></span><span>Steer</span>
     <span><kbd>Space</kbd></span><span>Handbrake</span>
-    <span><kbd>E</kbd> / <kbd>Q</kbd></span><span>Shift up / down (manual)</span>
+    <span><kbd>+</kbd> / <kbd>−</kbd> · <kbd>E</kbd> / <kbd>Q</kbd></span><span>Shift up / down (switches to manual; <kbd>G</kbd> back to automatic)</span>
     <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>Fun / Sport / Simulation</span>
     <span><kbd>R</kbd> · <kbd>C</kbd> · <kbd>H</kbd></span><span>Reset · camera · panel</span>
     <span><kbd>M</kbd></span><span>Sound on / off</span>
@@ -216,6 +220,8 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   <div class="tbtn" id="tBrake">Brake</div>
   <div class="tbtn" id="tGas">Gas</div>
   <div class="tbtn" id="tHand">HB</div>
+  <div class="tbtn tshift" id="tDown" aria-label="Shift down">−</div>
+  <div class="tbtn tshift" id="tUp" aria-label="Shift up">+</div>
 </div>
 
 <div id="loading"><div class="panel"><div class="eyebrow">Loading physics</div><p id="loadMsg" style="margin:10px 0 0">Starting the WebAssembly vehicle core…</p></div></div>

@@ -221,6 +221,15 @@ class TyreSynth {
   }
 }
 
+// Never let one bad value kill the sound: inputs are sanitised, and if the synth state ever goes
+// non-finite (or throws), it is rebuilt and this block is output as silence.
+function fin(x, d) { return Number.isFinite(x) ? x : d; }
+function safeRender(proc, make, L, R, p) {
+  try { proc.s.render(L, R, L.length, p); } catch { L.fill(0); R.fill(0); proc.s = make(); return; }
+  if (!Number.isFinite(L[0]) || !Number.isFinite(L[L.length - 1]) || !Number.isFinite(R[L.length - 1])) {
+    L.fill(0); if (R !== L) R.fill(0); proc.s = make();
+  }
+}
 if (typeof registerProcessor !== 'undefined') {
   registerProcessor('v8-engine', class extends AudioWorkletProcessor {
     static get parameterDescriptors() {
@@ -232,11 +241,12 @@ if (typeof registerProcessor !== 'undefined') {
         { name: 'interior', defaultValue: 0, minValue: 0, maxValue: 1, automationRate: 'k-rate' },
       ];
     }
-    constructor() { super(); this.s = new EngineSynth(sampleRate); }
+    constructor() { super(); this.s = new EngineSynth(sampleRate); this.n = 0; }
     process(_in, outputs, P) {
       const o = outputs[0];
       const L = o[0], R = o[1] || o[0];
-      this.s.render(L, R, L.length, { rpm: P.rpm[0], load: P.load[0], limiter: P.limiter[0], cut: P.cut[0], interior: P.interior[0] });
+      safeRender(this, () => new EngineSynth(sampleRate), L, R, { rpm: fin(P.rpm[0], 900), load: fin(P.load[0], 0), limiter: fin(P.limiter[0], 9000), cut: fin(P.cut[0], 0), interior: fin(P.interior[0], 0) });
+      if (++this.n % 200 === 0) this.port.postMessage(0); // heartbeat (~every 0.5 s)
       return true;
     }
   });
@@ -249,7 +259,7 @@ if (typeof registerProcessor !== 'undefined') {
     constructor() { super(); this.s = new TyreSynth(sampleRate); }
     process(_in, outputs, P) {
       const o = outputs[0], L = o[0], R = o[1] || o[0];
-      this.s.render(L, R, L.length, { squeal: P.squeal[0], scrub: P.scrub[0], pitch: P.pitch[0], speed: P.speed[0] });
+      safeRender(this, () => new TyreSynth(sampleRate), L, R, { squeal: fin(P.squeal[0], 0), scrub: fin(P.scrub[0], 0), pitch: fin(P.pitch[0], 0), speed: fin(P.speed[0], 0) });
       return true;
     }
   });
