@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<base href="/sao-paulo/driving/">
+<title>Driving Test Track</title>
+<meta name="description" content="Drive the São Paulo World vehicle physics in the browser: the OpenRoad Dynamics core compiled to WebAssembly on a proving ground with a skidpad, slalom, bumps and a wet section.">
+<meta property="og:title" content="São Paulo World · Driving Test Track">
+<meta property="og:description" content="The game's vehicle physics, running in your browser.">
+<meta property="og:image" content="https://zrossermcintosh.com/sao-paulo/img/og.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='7' width='30' height='18' rx='3' fill='%230a3a8c' stroke='white' stroke-width='2'/%3E%3Ctext x='16' y='21' font-family='Arial' font-weight='900' font-size='11' text-anchor='middle' fill='white'%3ESP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+:root{
+  --bg:#0b111b; --panel:rgba(10,17,28,.82); --ink:#e7ecf2; --mute:#93a0b2; --line:rgba(255,255,255,.12);
+  --plate:#1d57c2; --plate-ink:#fff; --masp:#ec4a3c; --good:#36c483; --warn:#f0b43a; --bad:#ef5d4f; --hot:#ffd36b;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif; --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 var(--body);overflow:hidden;overscroll-behavior:none}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+button{font:600 12px var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:6px;padding:6px 9px;cursor:pointer}
+button:hover{background:rgba(255,255,255,.12)}
+button[aria-pressed="true"]{background:#fff;color:#0a1830;border-color:#fff}
+button:focus-visible,select:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+select{font:600 12px var(--body);color:var(--ink);background:#141d2b;border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:rgba(255,255,255,.05)}
+.eyebrow{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+/* top bar */
+.top{position:fixed;left:12px;right:12px;top:12px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:2}
+.top>*{pointer-events:auto}
+.top button{background:rgba(10,17,28,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.top button:hover{background:rgba(10,17,28,.9)}
+.plate{display:inline-flex;flex-direction:column;align-items:center;background:var(--plate);color:var(--plate-ink);border:2px solid var(--plate-ink);outline:1px solid var(--plate);border-radius:5px;padding:5px 12px 5px;text-decoration:none}
+.plate b{font:900 20px/.95 var(--display);text-transform:uppercase;white-space:nowrap}
+.plate span{font:600 9px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+/* side panel */
+.panel{background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:12px}
+#side{position:fixed;right:12px;top:66px;width:300px;max-height:calc(100% - 78px);overflow:auto;z-index:2}
+#side[hidden]{display:none}
+#side h2{font:800 15px/1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px}
+#side h2:first-child{margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.note{color:var(--mute);font-size:12px;margin:8px 0 0}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12px;color:var(--mute);align-items:center}
+.keys span:nth-child(odd){white-space:nowrap}
+/* HUD */
+#hud{position:fixed;left:12px;bottom:12px;display:flex;gap:10px;align-items:flex-end;z-index:2;pointer-events:none;flex-wrap:wrap;max-width:calc(100% - 24px)}
+.speed{font:900 64px/.85 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.speed small{font:600 13px var(--mono);color:var(--mute);margin-left:4px;letter-spacing:.05em}
+.gear{font:900 34px/1 var(--display);width:44px;height:44px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:8px}
+.rpm{height:6px;width:190px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:8px}
+.rpm i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--good),var(--warn) 75%,var(--bad))}
+.aids{display:flex;gap:5px;margin-top:8px;font:600 11px var(--mono)}
+.aids span{border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--mute)}
+.aids span.on{color:var(--ink);border-color:rgba(255,255,255,.4)}
+.aids span.act{background:var(--hot);color:#111;border-color:var(--hot)}
+.preset{font:800 13px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--hot)}
+.wheels{display:grid;grid-template-columns:repeat(2,52px);gap:6px 18px;padding:8px 10px}
+.wheel{font:500 10.5px/1.25 var(--mono);color:var(--mute)}
+.wheel .bar{height:5px;border-radius:2px;background:rgba(255,255,255,.1);margin-top:3px;overflow:hidden}
+.wheel .bar i{display:block;height:100%;background:var(--good)}
+.gg{width:92px;height:92px}
+.timers{font:500 12px/1.6 var(--mono);min-width:150px}
+.timers b{color:var(--ink);font-weight:600}
+.timers span{color:var(--mute)}
+#zone{position:fixed;left:50%;top:14px;transform:translateX(-50%);font:900 italic 26px/1 var(--display);text-shadow:0 2px 8px rgba(0,0,0,.9);color:#fff;pointer-events:none;z-index:1;opacity:0;transition:opacity .4s;white-space:nowrap}
+#zone.on{opacity:1}
+#toast{position:fixed;left:50%;top:50px;transform:translateX(-50%);font:600 13px var(--body);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;z-index:3;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 24px);text-align:center}
+#toast.on{opacity:1}
+#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:var(--bg)}
+#loading .panel{max-width:420px;text-align:center}
+#drop{position:fixed;inset:0;display:none;place-items:center;z-index:6;background:rgba(10,30,80,.6);font:800 34px var(--display);text-transform:uppercase;border:4px dashed #fff}
+#drop.on{display:grid}
+/* touch controls */
+#touch{display:none}
+@media (pointer:coarse){
+  #touch{display:block}
+  .tbtn{position:fixed;bottom:18px;width:84px;height:110px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);font:800 16px var(--display);color:#fff;display:grid;place-items:center;z-index:3;user-select:none;-webkit-user-select:none;touch-action:none}
+  .tbtn.on{background:rgba(255,255,255,.3)}
+  #tGas{right:16px}#tBrake{right:112px;height:84px}
+  #tSteer{position:fixed;left:16px;bottom:18px;width:min(calc(100vw - 236px),260px);height:84px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);z-index:3;touch-action:none}
+  #tSteer i{position:absolute;top:8px;bottom:8px;width:34px;left:calc(50% - 17px);border-radius:10px;background:rgba(255,255,255,.55)}
+  #hud{bottom:118px}
+  #hud .wheels,#hud .timers,#hud .panel:has(.gg){display:none}
+  .speed{font-size:44px}.gear{width:36px;height:36px;font-size:26px}.rpm{width:140px}
+  #side{width:min(300px,calc(100% - 24px))}
+}
+@media (max-width:640px){.speed{font-size:48px}.gg{display:none}.timers{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="3D view of the driving test track"></canvas>
+
+<div class="top">
+  <a class="plate" href="/sao-paulo/" title="Back to São Paulo World"><b>São Paulo World</b><span>Driving test track</span></a>
+  <div class="row">
+    <button id="bCam" title="Camera (C)">Camera</button>
+    <button id="bReset" title="Reset car (R)">Reset</button>
+    <button id="bPanel" aria-expanded="true" aria-controls="side" title="Settings and help (H)">Settings</button>
+  </div>
+</div>
+
+<aside id="side" class="panel" aria-label="Settings">
+  <h2>Car</h2>
+  <div class="row">
+    <select id="car" aria-label="Car">
+      <option value="0">Sports RWD · 300 kW · 1450 kg</option>
+      <option value="1">Hatch FWD · 130 kW · 1250 kg</option>
+      <option value="2">Saloon AWD · 1600 kg</option>
+      <option value="3">Hypercar AWD · ~476 km/h</option>
+      <option value="4">Race car · high downforce</option>
+    </select>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button id="bModel" title="Load a .glb car model from your computer">Load .glb model…</button>
+    <button id="bTurn" title="Turn the loaded model 90°">Turn model 90°</button>
+    <input id="file" type="file" accept=".glb,.gltf" hidden>
+  </div>
+  <p class="note" id="modelNote">Showing the placeholder body. Drop a <b>.glb</b> exported from Blender anywhere on the page to drive it.</p>
+
+  <h2>Driving preset</h2>
+  <div class="row" role="group" aria-label="Driving preset">
+    <button data-preset="0" aria-pressed="true">Fun</button>
+    <button data-preset="1" aria-pressed="false">Sport</button>
+    <button data-preset="2" aria-pressed="false">Simulation</button>
+  </div>
+  <p class="note">Presets only change the driver aids. Grip, power and weight are identical in all three.</p>
+
+  <h2>Aids</h2>
+  <div class="row">
+    <button id="aAbs" aria-pressed="true" title="B">ABS</button>
+    <button id="aTcs" title="T">TCS: full</button>
+    <button id="aEsc" title="Y">ESC: full</button>
+    <button id="aBox" aria-pressed="true" title="G">Auto gearbox</button>
+  </div>
+
+  <h2>Go to</h2>
+  <div class="row" id="zones"></div>
+
+  <h2>Telemetry</h2>
+  <div class="row"><button id="bRec" aria-pressed="false">Record CSV</button><button id="bCsv" disabled>Download</button></div>
+  <p class="note" id="recNote">Records every frame: speed, g-forces, inputs, rpm and per-wheel load and slip.</p>
+
+  <h2>Controls</h2>
+  <div class="keys">
+    <span><kbd>W</kbd> <kbd>↑</kbd></span><span>Throttle</span>
+    <span><kbd>S</kbd> <kbd>↓</kbd></span><span>Brake (reverse when stopped)</span>
+    <span><kbd>A</kbd><kbd>D</kbd> <kbd>←</kbd><kbd>→</kbd></span><span>Steer</span>
+    <span><kbd>Space</kbd></span><span>Handbrake</span>
+    <span><kbd>E</kbd> / <kbd>Q</kbd></span><span>Shift up / down (manual)</span>
+    <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>Fun / Sport / Simulation</span>
+    <span><kbd>R</kbd> · <kbd>C</kbd> · <kbd>H</kbd></span><span>Reset · camera · panel</span>
+    <span>Gamepad</span><span>Left stick steer, RT gas, LT brake, A handbrake, RB/LB shift, Y reset, View camera</span>
+  </div>
+  <p class="note">Physics: the OpenRoad Dynamics core (the same C++ the game will use) compiled to WebAssembly, stepping at 360 Hz. Tire, suspension, drivetrain and aids are fully simulated; the car models here are fictional reference cars. This page doesn't run Unreal Engine or Chaos.</p>
+</aside>
+
+<div id="hud">
+  <div class="panel">
+    <div class="preset" id="hPreset">Fun</div>
+    <div style="display:flex;gap:12px;align-items:flex-end;margin-top:4px">
+      <div class="speed" id="hSpeed">0<small>KM/H</small></div>
+      <div class="gear" id="hGear">1</div>
+    </div>
+    <div class="rpm"><i id="hRpm"></i></div>
+    <div class="aids"><span id="iAbs">ABS</span><span id="iTcs">TCS</span><span id="iEsc">ESC</span><span id="iCs">CS</span></div>
+  </div>
+  <div class="panel wheels" id="hWheels" aria-label="Per-wheel load and slip"></div>
+  <div class="panel"><svg class="gg" id="gg" viewBox="-50 -50 100 100" aria-label="g-g diagram"></svg></div>
+  <div class="panel timers" id="hTimers"></div>
+</div>
+
+<div id="zone"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="drop">Drop the .glb to drive it</div>
+
+<div id="touch" aria-hidden="true">
+  <div id="tSteer"><i></i></div>
+  <div class="tbtn" id="tBrake">Brake</div>
+  <div class="tbtn" id="tGas">Gas</div>
+</div>
+
+<div id="loading"><div class="panel"><div class="eyebrow">Loading physics</div><p id="loadMsg" style="margin:10px 0 0">Starting the WebAssembly vehicle core…</p></div></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
