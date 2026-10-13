@@ -53,8 +53,11 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
 .speed{font:900 64px/.85 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .speed small{font:600 13px var(--mono);color:var(--mute);margin-left:4px;letter-spacing:.05em}
 .gear{font:900 34px/1 var(--display);width:44px;height:44px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:8px}
-.rpm{height:6px;width:190px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:8px}
-.rpm i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--good),var(--warn) 75%,var(--bad))}
+.tachp{padding:6px;border-radius:50%}
+.tach{width:168px;height:168px;display:block}
+.tach .num text{font:700 8.5px var(--display);text-anchor:middle}
+.tach .unit{font:600 4.2px var(--mono);fill:#93a0b2;text-anchor:middle;letter-spacing:.04em}
+.tach .tgear{font:900 17px var(--display);fill:#fff;text-anchor:middle}
 .aids{display:flex;gap:5px;margin-top:8px;font:600 11px var(--mono)}
 .aids span{border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--mute)}
 .aids span.on{color:var(--ink);border-color:rgba(255,255,255,.4)}
@@ -87,7 +90,7 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   #tSteer i{position:absolute;top:8px;bottom:8px;width:34px;left:calc(50% - 17px);border-radius:10px;background:rgba(255,255,255,.55)}
   #hud{bottom:118px}
   #hud .wheels,#hud .timers,#hud .panel:has(.gg){display:none}
-  .speed{font-size:44px}.gear{width:36px;height:36px;font-size:26px}.rpm{width:140px}
+  .speed{font-size:44px}.gear{width:36px;height:36px;font-size:26px}.tach{width:118px;height:118px}
   #side{width:min(300px,calc(100% - 24px))}
 }
 @media (max-width:640px){.speed{font-size:48px}.gg{display:none}.timers{display:none}}
@@ -124,6 +127,11 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   </div>
   <p class="note" id="modelNote">Showing the placeholder body. Drop a <b>.glb</b> exported from Blender anywhere on the page to drive it.</p>
 
+  <h2>Sound</h2>
+  <div class="row"><button id="bSound" aria-pressed="true" title="M">Sound on</button>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)">Volume <input id="vol" type="range" min="0" max="100" value="80" style="width:110px"></label></div>
+  <p class="note">Synthesized flat-plane V8 (no recordings): every firing pulse is generated from the engine rpm and load, with tyre squeal from the physics' slip, wind and road noise. The Bonnet camera hears it from the cabin.</p>
+
   <h2>Driving preset</h2>
   <div class="row" role="group" aria-label="Driving preset">
     <button data-preset="0" aria-pressed="true">Fun</button>
@@ -156,19 +164,21 @@ kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
     <span><kbd>E</kbd> / <kbd>Q</kbd></span><span>Shift up / down (manual)</span>
     <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>Fun / Sport / Simulation</span>
     <span><kbd>R</kbd> · <kbd>C</kbd> · <kbd>H</kbd></span><span>Reset · camera · panel</span>
+    <span><kbd>M</kbd></span><span>Sound on / off</span>
+    <span>Mouse</span><span>Drag the view to orbit the car (free camera), scroll to zoom</span>
     <span>Gamepad</span><span>Left stick steer, RT gas, LT brake, A handbrake, RB/LB shift, Y reset, View camera</span>
   </div>
   <p class="note">Physics: the OpenRoad Dynamics core (the same C++ the game will use) compiled to WebAssembly, stepping at 360 Hz. Tire, suspension, drivetrain and aids are fully simulated; the car models here are fictional reference cars. This page doesn't run Unreal Engine or Chaos.</p>
 </aside>
 
 <div id="hud">
+  <div class="panel tachp"><svg class="tach" id="tach" viewBox="-50 -50 100 100" aria-label="Tachometer"></svg></div>
   <div class="panel">
     <div class="preset" id="hPreset">Fun</div>
     <div style="display:flex;gap:12px;align-items:flex-end;margin-top:4px">
       <div class="speed" id="hSpeed">0<small>KM/H</small></div>
-      <div class="gear" id="hGear">1</div>
+      <div class="gear" id="hGear" style="display:none">1</div>
     </div>
-    <div class="rpm"><i id="hRpm"></i></div>
     <div class="aids"><span id="iAbs">ABS</span><span id="iTcs">TCS</span><span id="iEsc">ESC</span><span id="iCs">CS</span></div>
   </div>
   <div class="panel wheels" id="hWheels" aria-label="Per-wheel load and slip"></div>
