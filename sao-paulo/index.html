@@ -115,6 +115,7 @@ svg text{font-family:var(--body)}
 .phys{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .phys span{font:600 12.5px var(--mono);border:1px solid var(--line);border-radius:5px;padding:5px 9px;background:var(--paper)}
 .phys span i{font-style:normal;color:var(--mute);font-weight:400}
+.drivecta{display:inline-flex;align-items:center;gap:18px;text-decoration:none;color:var(--ink)}.drivecta .go{font:800 22px var(--display);text-transform:uppercase;letter-spacing:.02em;border-bottom:2px solid var(--masp)}.drivecta:hover .go{color:var(--masp)}
 footer{border-top:1px solid var(--line);padding-block:40px 56px;color:var(--mute);font-size:13.5px}
 footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-between;align-items:flex-start}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -285,6 +286,12 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
   <div class="sechead"><div><div class="eyebrow">Headed for Unreal Engine 5</div><h2>Hit a pole, it falls</h2></div>
     <p>Every object carries a crash class for the game's physics: lamp posts snap at 35 km/h, concrete distribution poles at 60, thick trees stop a car cold, and saplings bend out of the way. Street names stream with each tile, so the banner works anywhere in the map.</p></div>
   <div class="phys" id="phys"></div>
+</div></section>
+
+<section id="drive"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Try the physics</div><h2>Drive the test track</h2></div>
+    <p>The game's vehicle physics runs in your browser: the same C++ core, compiled to WebAssembly and stepping at 360 Hz. Take a car round a skidpad, a slalom, a bump lane with a kerb and a wet section, and switch between Fun, Sport and Simulation to feel the driver aids change while the grip stays the same.</p></div>
+  <p><a class="drivecta" href="driving/"><span class="plate sm"><b>Test track</b><span>Keyboard · gamepad · touch</span></span><span class="go">Start driving →</span></a></p>
 </div></section>
 
 <footer><div class="wrap row">
