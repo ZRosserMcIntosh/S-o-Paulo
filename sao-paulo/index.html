@@ -245,13 +245,13 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 
 <section id="qa"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">Quality</div><h2>576 tiles, checked by machine</h2></div>
-    <p>Every 500 m tile is opened headless and inspected for objects standing in the road, floating buildings, terrain poking through asphalt, missing bridges and seams with its neighbours. Then six automatic repair passes run, and the tile is checked again.</p></div>
+    <p>Every 500 m tile is opened headless and inspected for objects standing in the road, floating buildings, terrain poking through asphalt, missing bridges and seams with its neighbours. Then eight automatic repair passes run, and the tile is checked again. The goal is every tile at grade A: deep green.</p></div>
   <div class="qa">
     <div class="panel">
       <div class="eyebrow">Grade distribution after each repair pass</div><div class="hist" id="hist" style="margin-top:12px"></div><div class="eyebrow" style="margin-top:22px">Now</div>
       <div class="bar" id="gbar"></div><div class="key" id="gkey"></div>
       <div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:26px">
-        <div class="big" id="green">–<small>tiles graded A or B</small></div>
+        <div class="big" id="green" style="color:#1f9d63">–<small>tiles at grade A (deep green)</small></div>
         <div class="big" id="hi" style="color:var(--masp)">–<small>high-severity issues left (from 511)</small></div>
       </div>
     </div>
@@ -264,6 +264,8 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
         <li>Poles off the road, outdated 2014 footprints hidden, gaps in the street network filled</li>
         <li>Level-aware smoothing so viaducts don't average with the streets under them</li>
         <li>Bridge decks for the Minhocão and the river bridges; floating towers grounded</li>
+        <li>Streets re-fitted along their length so they are level across, as real streets are</li>
+        <li>The last steep steps flattened, ramp skirts turned into retaining walls, paint re-laid, objects moved off the curb line</li>
       </ol>
     </div>
   </div>
@@ -295,7 +297,7 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 const $=id=>document.getElementById(id), fmt=n=>n.toLocaleString("en-US");
 let D; try{D=await (await fetch("site_data.json")).json()}catch(e){$("facts").textContent="Could not load the project data.";return}
 const [I0,I1,J0,J1]=D.grid, X0=I0*500-250, X1=I1*500+250, Y0=J0*500-250, Y1=J1*500+250, W=X1-X0, H=Y1-Y0;
-const T=D.tot, ST=D.streets_tot, green=(T.grades.A||0)+(T.grades.B||0);
+const T=D.tot, ST=D.streets_tot, green=(T.grades.A||0);
 const stops=D.lines.reduce((a,l)=>a+l.st.length,0);
 $("facts").innerHTML=`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span><span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
 const stats=[[T.buildings,"buildings"],[T.trees,"street & park trees"],[T.poles,"utility poles"],[ST.streets,"named streets"],[ST.intersections,"crossings with name plates"],[stops,"rail station stops"]];
