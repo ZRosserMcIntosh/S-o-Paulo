@@ -4,6 +4,7 @@
 // every force, slip and aid intervention comes from the core.
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from './vendor/libs/meshopt_decoder.module.js';
 import createOrdModule from './ord.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -270,9 +271,10 @@ function buildPlaceholder() {
 }
 
 // ---------- Blender model loading (.glb) ----------
-const loader = new GLTFLoader();
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 let modelSource = null; // { buffer, name }
 const WHEEL_RE = /(wheel|tire|tyre|rim|roda|pneu)/i;
+const CALIPER_RE = /^caliper/i;
 
 function isWheelNode(o) {
   for (let n = o; n && n !== modelSource?.sceneRoot; n = n.parent) if (WHEEL_RE.test(n.name || '')) return true;
@@ -319,13 +321,15 @@ async function loadModel(buffer, name, announce = true) {
 
   // Wheels: nodes named wheel/tire/tyre/rim (any language variant above), grouped per corner.
   const quads = [[], [], [], []]; // FL FR RL RR (physics order)
+  const calipers = [[], [], [], []]; // steer and bounce with the wheel, but don't spin
   const mid = new THREE.Box3().setFromObject(inner).getCenter(new THREE.Vector3());
   inner.traverse((o) => {
-    if (!o.isMesh || !isWheelNode(o)) return;
+    const isCal = o.isMesh && CALIPER_RE.test(o.name || '') && !isWheelNode(o);
+    if (!o.isMesh || (!isWheelNode(o) && !isCal)) return;
     const bc = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
     carRoot.worldToLocal(bc);
     const front = bc.x > mid.x, left = bc.z < mid.z; // three -Z is ISO +Y (left)
-    quads[(front ? 0 : 2) + (left ? 0 : 1)].push(o);
+    (isCal ? calipers : quads)[(front ? 0 : 2) + (left ? 0 : 1)].push(o);
   });
   const rigs = [null, null, null, null];
   const hasWheels = quads.every((q) => q.length > 0);
@@ -338,6 +342,7 @@ async function loadModel(buffer, name, announce = true) {
       steer.position.copy(centre); steer.add(spin); wrapper.add(steer);
       steer.updateMatrixWorld(true);
       for (const m of meshes) spin.attach(m);
+      for (const m of calipers[w]) steer.attach(m);
       rigs[w] = { steer, spin, base: centre.clone() };
     });
   }
@@ -679,7 +684,7 @@ function updateCones(dt, carPosIso, carVelIso) {
 createCar();
 const savedModel = await fetch('models/car.glb', { method: 'HEAD' }).then((r) => (r.ok ? true : false)).catch(() => false);
 if (savedModel) {
-  try { await loadModel(await (await fetch('models/car.glb')).arrayBuffer(), 'car.glb', false); }
+  try { await loadModel(await (await fetch('models/car.glb')).arrayBuffer(), 'Rosser Stella V8', false); }
   catch (e) { console.warn('models/car.glb failed to load', e); }
 }
 $('loading').remove();
