@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/", "destination": "/sao-paulo/", "permanent": false },
+    { "source": "/sao-paulo", "destination": "/sao-paulo/", "permanent": true }
+  ],
+  "headers": [
+    { "source": "/sao-paulo/img/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
+  ]
+}

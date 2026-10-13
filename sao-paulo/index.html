@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<base href="/sao-paulo/">
+<meta name="description" content="São Paulo World: a 1:1 rebuild of 144 km² of São Paulo for an open-world driving game. Every building, tree, lamp post and named street, plus the Metrô at its real depth.">
+<meta property="og:title" content="São Paulo World">
+<meta property="og:description" content="A 1:1 rebuild of 144 km² of São Paulo for an open-world driving game.">
+<meta property="og:image" content="https://zrossermcintosh.com/sao-paulo/img/og.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='7' width='30' height='18' rx='3' fill='%230a3a8c' stroke='white' stroke-width='2'/%3E%3Ctext x='16' y='21' font-family='Arial' font-weight='900' font-size='11' text-anchor='middle' fill='white'%3ESP%3C/text%3E%3C/svg%3E">
+<title>São Paulo World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one long street — a plate-blue masthead over the full-city mosaic, then sections that read like blocks along an avenue. */
+:root{
+  --bg:#eceeed; --paper:#f7f8f7; --ink:#0f1a2a; --mute:#5b6676; --line:#cfd5d8;
+  --plate:#0a3a8c; --plate-ink:#ffffff; --masp:#d22a1f; --good:#1f9d63; --warn:#d99a12; --bad:#cf3b2f;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif; --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0b111b;--paper:#111a27;--ink:#e7ecf2;--mute:#93a0b2;--line:#233044;--plate:#1d57c2;--masp:#ec4a3c;--good:#36c483;--warn:#f0b43a;--bad:#ef5d4f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b111b;--paper:#111a27;--ink:#e7ecf2;--mute:#93a0b2;--line:#233044;--plate:#1d57c2;--masp:#ec4a3c;--good:#36c483;--warn:#f0b43a;--bad:#ef5d4f;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:.95}
+h2{font-size:clamp(40px,6vw,72px);font-weight:800;text-transform:uppercase;letter-spacing:.005em}
+h3{font-size:26px;font-weight:800;text-transform:uppercase}
+p{margin:0;max-width:64ch}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+a{color:var(--plate)}
+/* the plate */
+.plate{display:inline-flex;flex-direction:column;align-items:center;background:var(--plate);color:var(--plate-ink);border:4px solid var(--plate-ink);outline:2px solid var(--plate);border-radius:6px;padding:14px 26px 12px;box-shadow:0 18px 40px -22px rgba(4,20,60,.7)}
+.plate b{font:900 clamp(52px,7.2vw,108px)/.86 var(--display);letter-spacing:.01em;text-transform:uppercase;text-align:center}
+.plate.sm b{white-space:nowrap}
+[hidden]{display:none!important}
+.plate span{font:600 clamp(11px,1.3vw,15px)/1.2 var(--body);letter-spacing:.18em;text-transform:uppercase;margin-top:10px;opacity:.95}
+.plate.sm b{font-size:24px}.plate.sm span{font-size:10px;margin-top:4px;letter-spacing:.12em}.plate.sm{padding:6px 14px 6px;border-width:2px;outline-width:1px}
+header.hero{padding-block:clamp(28px,5vw,56px) 28px}
+.herogrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,40px);align-items:start}
+@media (max-width:900px){.herogrid{grid-template-columns:1fr}}
+.lede{font-size:clamp(17px,1.6vw,19px);margin-top:26px;color:var(--ink)}
+.lede em{font-style:normal;color:var(--masp);font-weight:600}
+.facts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font:500 13px var(--mono);color:var(--mute)}
+.facts b{color:var(--ink);font-weight:600}
+/* map */
+.mapcard{position:relative;background:#141a22;border-radius:10px;overflow:hidden;aspect-ratio:1/1;max-width:100%;touch-action:none;box-shadow:0 30px 60px -40px rgba(0,0,0,.6)}
+#map{width:100%;height:100%;display:block;cursor:grab}#map.drag{cursor:grabbing}
+.banner{position:absolute;right:16px;bottom:16px;text-align:right;pointer-events:none;transition:opacity .25s;max-width:80%}
+.banner .n{font:900 italic clamp(22px,3vw,34px)/1 var(--display);color:#fff;text-transform:none;letter-spacing:.01em;text-shadow:0 0 2px #000,0 2px 8px rgba(0,0,0,.9)}
+.banner .a{font:700 clamp(12px,1.4vw,15px)/1.4 var(--body);color:#ffd36b;letter-spacing:.06em;text-shadow:0 1px 6px rgba(0,0,0,.95);margin-top:4px}
+.modes{position:absolute;left:12px;top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.modes button,.zoom button{font:600 12px var(--body);border:0;border-radius:6px;padding:7px 10px;background:rgba(10,18,30,.72);color:#dfe6ef;cursor:pointer;backdrop-filter:blur(4px)}
+.modes button[aria-pressed="true"]{background:#fff;color:#0a1830}
+.modes button:focus-visible,.zoom button:focus-visible,.chip:focus-visible{outline:2px solid #ffd36b;outline-offset:2px}
+.zoom{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:34px;height:34px;font-size:17px;padding:0}
+.legend{position:absolute;left:12px;bottom:14px;display:flex;flex-wrap:wrap;gap:6px 12px;font:500 11.5px var(--body);color:#dfe6ef;text-shadow:0 1px 3px #000;pointer-events:none;max-width:55%}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.hint{font:500 12px var(--mono);color:var(--mute);margin-top:10px}
+.tilecard{margin-top:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center}
+.tilecard .g{font:900 30px/1 var(--display);width:46px;height:46px;border-radius:8px;display:grid;place-items:center;color:#fff;grid-row:span 2}
+.tilecard .t{font:600 15px var(--mono)}.tilecard .s{font-size:13px;color:var(--mute);min-width:0}
+/* sections */
+section{padding-block:clamp(56px,8vw,96px);border-top:1px solid var(--line)}
+.sechead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px 40px;align-items:end;margin-bottom:34px}
+@media (max-width:820px){.sechead{grid-template-columns:1fr}}
+.sechead p{color:var(--mute)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border-block:1px solid var(--line)}
+.stat{padding:20px 18px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font:800 clamp(34px,4vw,48px)/1 var(--display);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--mute)}
+.gal{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.gal figure{margin:0;position:relative;overflow:hidden;border-radius:8px;background:#151b23}
+.gal img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease}
+.gal figure:hover img{transform:scale(1.03)}
+.gal figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 10px;font:600 13px var(--body);color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.gal figcaption small{display:block;font:400 12px var(--body);opacity:.85}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c3{grid-column:span 3}.c12{grid-column:span 12}
+.r1{aspect-ratio:16/10}.r2{aspect-ratio:4/3}.rw{aspect-ratio:21/9}
+@media (max-width:760px){.gal>*{grid-column:span 12!important}}
+/* metro */
+.metro{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:28px;align-items:start}
+@media (max-width:900px){.metro{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:5px 11px 5px 8px;font:600 12.5px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.chip i{width:12px;height:12px;border-radius:50%}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+svg text{font-family:var(--body)}
+.prof{overflow-x:auto}
+.stlist{font:500 13px var(--body);color:var(--mute);margin-top:10px;min-height:2.6em}
+/* QA */
+.qa{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+@media (max-width:820px){.qa{grid-template-columns:1fr}}
+.bar{display:flex;height:22px;border-radius:5px;overflow:hidden;margin:12px 0 10px}
+.bar div{height:100%}
+.key{display:flex;flex-wrap:wrap;gap:6px 16px;font:500 13px var(--body);color:var(--mute)}
+.key i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.steps{display:grid;gap:10px;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:baseline;font-size:15px}
+.steps li::before{counter-increment:s;content:"P" counter(s);font:600 12px var(--mono);color:var(--plate);border:1px solid var(--plate);border-radius:5px;text-align:center;padding:2px 0}
+.big{font:900 clamp(64px,10vw,120px)/.9 var(--display);font-variant-numeric:tabular-nums}
+.big small{font:600 16px var(--body);color:var(--mute);display:block;margin-top:8px}
+/* streets */
+.streets{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:28px;align-items:center}
+@media (max-width:820px){.streets{grid-template-columns:1fr}}
+.demo{position:relative;border-radius:10px;overflow:hidden;background:#151b23;aspect-ratio:3/2}
+.demo img{width:100%;height:100%;object-fit:cover}
+.demo .banner{opacity:0}.demo.on .banner{opacity:1}
+.phys{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.phys span{font:600 12.5px var(--mono);border:1px solid var(--line);border-radius:5px;padding:5px 9px;background:var(--paper)}
+.phys span i{font-style:normal;color:var(--mute);font-weight:400}
+footer{border-top:1px solid var(--line);padding-block:40px 56px;color:var(--mute);font-size:13.5px}
+footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-between;align-items:flex-start}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
+</head>
+<body>
+
+<header class="hero"><div class="wrap herogrid">
+  <div>
+    <div class="eyebrow">An open-world game, one tile at a time</div>
+    <div style="margin-top:18px"><div class="plate"><b>São Paulo<br>World</b><span>Centro · Paulista · Pinheiros · Ibirapuera &nbsp;1 : 1</span></div></div>
+    <p class="lede">A <em>block-by-block</em> rebuild of São Paulo for a driving game: 144 km² of the real city from public survey data. Every building footprint, street tree, lamp post and named street, plus the Metrô running underneath at its real depth.</p>
+    <div class="facts" id="facts"></div>
+    <div class="tilecard" id="tilecard" hidden></div>
+  </div>
+  <div>
+    <div class="mapcard" id="mapcard">
+      <canvas id="map" aria-label="Top-down mosaic of all 576 tiles; hover to read street names"></canvas>
+      <div class="modes" role="group" aria-label="Map layer">
+        <button id="m_img" aria-pressed="true" data-m="img">Imagery</button><button id="m_qa" aria-pressed="false" data-m="qa">QA grades</button><button id="m_st" aria-pressed="false" data-m="st">Streets</button><button id="m_mt" aria-pressed="false" data-m="mt">Metrô</button>
+      </div>
+      <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
+      <div class="legend" id="legend"></div>
+      <div class="banner" id="banner"><div class="n" id="bn"></div><div class="a" id="ba"></div></div>
+    </div>
+    <div class="hint">Drag to pan · scroll or +/− to zoom · hover for the in-game street banner · click a tile</div>
+  </div>
+</div></header>
+
+<div class="wrap"><div class="stats" id="stats"></div></div>
+
+<section id="street"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Street level</div><h2>The city you already know</h2></div>
+    <p>MASP floating over Avenida Paulista, the canopy of Jardins, the towers of Faria Lima. Buildings come from GeoSampa's 3D footprints and OpenStreetMap; sidewalks, curbs, trees, poles and bins are placed from the city's own survey layers, then checked automatically.</p></div>
+  <div class="gal">
+    <figure class="c8 r1"><img src="img/masp.jpg" alt="MASP over Avenida Paulista" loading="lazy"><figcaption>MASP · Avenida Paulista<small>Lina Bo Bardi's red frame over the belvedere</small></figcaption></figure>
+    <figure class="c4 r1"><img src="img/paulista.jpg" alt="Sidewalk on Avenida Paulista" loading="lazy"><figcaption>Paulista sidewalk<small>Trees, bins and lamp posts from GeoSampa</small></figcaption></figure>
+    <figure class="c4 r2"><img src="img/aerial.jpg" alt="Aerial over Bela Vista" loading="lazy"><figcaption>Bela Vista from above</figcaption></figure>
+    <figure class="c4 r2"><img src="img/neigh.jpg" alt="Neighbourhood blocks" loading="lazy"><figcaption>Low-rise neighbourhoods<small>Hip roofs, water tanks, front walls</small></figcaption></figure>
+    <figure class="c4 r2"><img src="img/malls.jpg" alt="Towers in the south-west" loading="lazy"><figcaption>Towers of the south-west</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="metro"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Underground</div><h2>The Metrô, at its real depth</h2></div>
+    <p>Eight lines run through the map in their own geometry layer: tunnels, viaducts, 67 station stops and 139 street entrances. Depths come from published figures where they exist (Paulista sits 55.8 m down) and line-typical values elsewhere. Every station is walkable: real stairs, escalators, fare lines and platforms.</p></div>
+  <div class="metro">
+    <div class="panel"><div class="chips" id="lchips"></div><svg id="plan" viewBox="0 0 600 600" role="img" aria-label="Metro and CPTM lines over the city"></svg><div class="stlist" id="stinfo">Hover a station.</div></div>
+    <div class="panel"><div class="eyebrow" style="margin-bottom:8px">Track profile · metres relative to MASP street level</div><div class="prof"><svg id="prof" viewBox="0 0 760 330" role="img" aria-label="Vertical profile of the selected line"></svg></div></div>
+  </div>
+  <div class="gal" style="margin-top:18px">
+    <figure class="c6 r1"><img src="img/se_l1.jpg" alt="Sé station Line 1 platform" loading="lazy"><figcaption>Sé · Line 1<small>Lower of the two stacked levels, 24 m down</small></figcaption></figure>
+    <figure class="c6 r1"><img src="img/paulista_catwalk.jpg" alt="Paulista Line 4 catwalk" loading="lazy"><figcaption>Paulista · Line 4<small>Steel catwalk over the tracks, then the shaft up</small></figcaption></figure>
+    <figure class="c4 r2"><img src="img/republica.jpg" alt="República Line 3" loading="lazy"><figcaption>República · Line 3</figcaption></figure>
+    <figure class="c4 r2"><img src="img/se_atrium.jpg" alt="Sé skylight atrium" loading="lazy"><figcaption>Sé · the skylight atrium</figcaption></figure>
+    <figure class="c4 r2"><img src="img/xfer_xray.jpg" alt="X-ray of the Paulista–Consolação transfer" loading="lazy"><figcaption>Paulista ↔ Consolação<small>The 300 m transfer passage, x-ray view</small></figcaption></figure>
+  </div>
+</div></section>
+
+<section id="landmarks"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Landmarks</div><h2>Built by hand where it matters</h2></div>
+    <p>A few structures get their own models on top of the procedural city: the Octávio Frias de Oliveira cable-stayed bridge, Estação da Luz with its clock tower and glazed train shed, the airport at Congonhas, the Line 17 monorail.</p></div>
+  <div class="gal">
+    <figure class="c7 rw"><img src="img/estaiada_river.jpg" alt="Ponte Estaiada from the river" loading="lazy"><figcaption>Ponte Estaiada<small>From the Pinheiros river</small></figcaption></figure>
+    <figure class="c5 rw"><img src="img/estaiada_below.jpg" alt="Under the Ponte Estaiada" loading="lazy"><figcaption>Under the X-shaped mast</figcaption></figure>
+    <figure class="c4 r2"><img src="img/estaiada_deck.jpg" alt="On the Estaiada deck" loading="lazy"><figcaption>On the deck</figcaption></figure>
+    <figure class="c4 r2"><img src="img/luz.jpg" alt="Estação da Luz" loading="lazy"><figcaption>Estação da Luz</figcaption></figure>
+    <figure class="c4 r2"><img src="img/cgh.jpg" alt="Congonhas airport" loading="lazy"><figcaption>Congonhas (CGH)</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="names"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Every street, named</div><h2>Turn a corner, see the name</h2></div>
+    <p>Street names are matched between OpenStreetMap and the city's official street register, down to each block's house numbers. In the game, the name and neighbourhood fade in when you turn onto a street. At every crossing, the city's blue name plates stand on the corner.</p></div>
+  <div class="streets">
+    <div class="demo" id="demo"><img src="img/sign_wide.jpg" alt="Corner of Rua Oscar Freire and Rua Haddock Lobo" loading="lazy"><div class="banner"><div class="n">Rua Oscar Freire</div><div class="a">Cerqueira César</div></div></div>
+    <div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+        <div class="plate sm"><b>R. Oscar Freire</b><span>Cerqueira César &nbsp; 632–753</span></div>
+        <div class="plate sm"><b>R. Haddock Lobo</b><span>Cerqueira César &nbsp; 1364–1521</span></div>
+      </div>
+      <div class="facts" id="sfacts" style="margin-top:20px"></div>
+      <p style="margin-top:18px;color:var(--mute)">Each plate shows its block's real number range from GeoSampa. Plates turn away from walls automatically, and every sign is a breakaway object in the physics manifest.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="qa"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Quality</div><h2>576 tiles, checked by machine</h2></div>
+    <p>Every 500 m tile is opened headless and inspected for objects standing in the road, floating buildings, terrain poking through asphalt, missing bridges and seams with its neighbours. Then six automatic repair passes run, and the tile is checked again.</p></div>
+  <div class="qa">
+    <div class="panel">
+      <div class="eyebrow">Grade distribution</div>
+      <div class="bar" id="gbar"></div><div class="key" id="gkey"></div>
+      <div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:26px">
+        <div class="big" id="green">–<small>tiles graded A or B</small></div>
+        <div class="big" id="hi" style="color:var(--masp)">–<small>high-severity issues left (from 511)</small></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow" style="margin-bottom:12px">Repair passes</div>
+      <ol class="steps">
+        <li>Street furniture: duplicates removed, bins and trees moved out of the carriageway</li>
+        <li>Lane paint re-seated on the asphalt; building bases dropped to the ground on slopes</li>
+        <li>Road surface smoothed; terrain carved under every street</li>
+        <li>Poles off the road, outdated 2014 footprints hidden, gaps in the street network filled</li>
+        <li>Level-aware smoothing so viaducts don't average with the streets under them</li>
+        <li>Bridge decks for the Minhocão and the river bridges; floating towers grounded</li>
+      </ol>
+    </div>
+  </div>
+</div></section>
+
+<section id="engine"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Headed for Unreal Engine 5</div><h2>Hit a pole, it falls</h2></div>
+    <p>Every object carries a crash class for the game's physics: lamp posts snap at 35 km/h, concrete distribution poles at 60, thick trees stop a car cold, and saplings bend out of the way. Street names stream with each tile, so the banner works anywhere in the map.</p></div>
+  <div class="phys" id="phys"></div>
+</div></section>
+
+<footer><div class="wrap row">
+  <div><div class="plate sm"><b>São Paulo World</b><span>Solo game project · 2026</span></div></div>
+  <div style="max-width:60ch">Data: © OpenStreetMap contributors (ODbL); GeoSampa, Prefeitura de São Paulo (buildings, sidewalks, street trees, lighting, street register, districts, terrain). Station facts from public sources. Modelled in Blender; renders shown are untextured previews.</div>
+</div></footer>
+
+<script>
+(async function(){
+const $=id=>document.getElementById(id), fmt=n=>n.toLocaleString("en-US");
+let D; try{D=await (await fetch("site_data.json")).json()}catch(e){$("facts").textContent="Could not load the project data.";return}
+const [I0,I1,J0,J1]=D.grid, X0=I0*500-250, X1=I1*500+250, Y0=J0*500-250, Y1=J1*500+250, W=X1-X0, H=Y1-Y0;
+const T=D.tot, ST=D.streets_tot, green=(T.grades.A||0)+(T.grades.B||0);
+const stops=D.lines.reduce((a,l)=>a+l.st.length,0);
+$("facts").innerHTML=`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span><span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
+const stats=[[T.buildings,"buildings"],[T.trees,"street & park trees"],[T.poles,"utility poles"],[ST.streets,"named streets"],[ST.intersections,"crossings with name plates"],[stops,"rail station stops"]];
+$("stats").innerHTML=stats.map(([v,l])=>`<div class="stat"><b>${fmt(v)}</b><span>${l}</span></div>`).join("");
+$("sfacts").innerHTML=`<span><b>${fmt(ST.streets)}</b> streets</span><span><b>${Math.round(100*ST.with_codlog/ST.streets)}%</b> matched to the official register</span><span><b>${fmt(ST.intersections)}</b> crossings</span><span><b>${ST.areas}</b> neighbourhoods</span>`;
+// grades
+const GC={A:"#1f9d63",B:"#8cc152",C:"#e5b62a",D:"#e5832a",F:"#cf3b2f"};
+$("gbar").innerHTML=["A","B","C","D","F"].map(g=>`<div style="width:${100*(T.grades[g]||0)/D.tiles.length}%;background:${GC[g]}" title="${g}: ${T.grades[g]||0}"></div>`).join("");
+$("gkey").innerHTML=["A","B","C","D","F"].map(g=>`<span><i style="background:${GC[g]}"></i>${g} ${T.grades[g]||0}</span>`).join("");
+$("green").firstChild.textContent=green; $("hi").firstChild.textContent=T.high;
+const PH=[["breakaway_light","snaps easily"],["breakaway_heavy","snaps above 35–80 km/h"],["immovable","stops the car"],["knockable","gets shoved"],["destructible","shatters"],["foliage_soft","drive through"],["attached","wires on poles"],["static","the world"]];
+$("phys").innerHTML=PH.map(([a,b])=>`<span>${a} <i>· ${b}</i></span>`).join("");
+const dm=$("demo"); dm.addEventListener("mouseenter",()=>dm.classList.add("on")); dm.addEventListener("mouseleave",()=>dm.classList.remove("on")); setTimeout(()=>dm.classList.add("on"),900);
+
+// ---------------- map
+const cv=$("map"), cx=cv.getContext("2d"), card=$("mapcard");
+const img=new Image(); img.src="img/mosaic.jpg"; const sm=new Image(); sm.src="img/mosaic_sm.jpg";
+let scale=1, ox=0, oy=0, mode="img", hover=null, dpr=Math.min(2,window.devicePixelRatio||1);
+const TL={}; D.tiles.forEach(t=>TL[t.t]=t);
+// street spatial grid (world metres, 60 m cells)
+const G=60, grid=new Map();
+D.streets.forEach((s,k)=>{const P=s[3];for(let n=1;n<P.length;n++){const a=P[n-1],b=P[n];const x0=Math.floor(Math.min(a[0],b[0])/G),x1=Math.floor(Math.max(a[0],b[0])/G),y0=Math.floor(Math.min(a[1],b[1])/G),y1=Math.floor(Math.max(a[1],b[1])/G);
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const key=x+","+y;let L=grid.get(key);if(!L)grid.set(key,L=[]);L.push(k*4096+n)}}});
+function nearest(wx,wy,maxd){let best=null,bd=maxd;const gx=Math.floor(wx/G),gy=Math.floor(wy/G);
+  for(let x=gx-1;x<=gx+1;x++)for(let y=gy-1;y<=gy+1;y++){const L=grid.get(x+","+y);if(!L)continue;
+    for(const c of L){const k=Math.floor(c/4096),n=c%4096,s=D.streets[k],a=s[3][n-1],b=s[3][n];const dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1;let t=((wx-a[0])*dx+(wy-a[1])*dy)/l2;t=Math.max(0,Math.min(1,t));
+      const d=Math.hypot(a[0]+dx*t-wx,a[1]+dy*t-wy)+s[2]*1.5;if(d<bd){bd=d;best=s}}}
+  return best}
+function size(){const r=card.getBoundingClientRect();cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);draw()}
+const base=()=>cv.width/W; // px per metre at scale 1
+const w2s=(x,y)=>[((x-X0)*base())*scale+ox,((Y1-y)*base())*scale+oy];
+const s2w=(px,py)=>[X0+((px-ox)/scale)/base(),Y1-((py-oy)/scale)/base()];
+function clamp(){const m=cv.width;scale=Math.max(1,Math.min(14,scale));ox=Math.min(0,Math.max(m-m*scale,ox));oy=Math.min(0,Math.max(m-m*scale,oy))}
+function draw(){const c=cx,Wc=cv.width;c.fillStyle="#141a22";c.fillRect(0,0,Wc,Wc);
+  const im=(scale*Wc>sm.naturalWidth*1.1&&img.complete&&img.naturalWidth)?img:(sm.complete&&sm.naturalWidth?sm:null);
+  if(im){c.imageSmoothingQuality="high";c.drawImage(im,ox,oy,Wc*scale,Wc*scale)}
+  const tp=500*base()*scale;
+  if(mode==="qa"){c.globalAlpha=.55;for(const t of D.tiles){const [x,y]=w2s(t.i*500-250,t.j*500+250);c.fillStyle=GC[t.g];c.fillRect(x+1,y+1,tp-2,tp-2)}c.globalAlpha=1}
+  if(mode==="st"){c.lineCap="round";const wd=[3.2,2.4,1.6,.9];for(const lv of [3,2,1,0])for(const s of D.streets){if(s[2]!==lv)continue;c.strokeStyle=lv<2?"#ffd36b":lv===2?"rgba(255,255,255,.9)":"rgba(170,205,255,.55)";c.lineWidth=wd[lv]*dpr*Math.min(2.2,.7+scale*.25);c.beginPath();s[3].forEach((p,n)=>{const [x,y]=w2s(p[0],p[1]);n?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}}
+  if(mode==="mt"){c.fillStyle="rgba(10,15,25,.45)";c.fillRect(0,0,Wc,Wc);c.lineCap="round";c.lineJoin="round";for(const l of D.lines){c.strokeStyle=l.c;c.lineWidth=4*dpr;c.beginPath();l.xy.forEach((p,n)=>{const [x,y]=w2s(p[0],p[1]);n?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();
+    for(const s of l.st){const [x,y]=w2s(s.x,s.y);c.fillStyle="#fff";c.strokeStyle=l.c;c.lineWidth=2.2*dpr;c.beginPath();c.arc(x,y,3.6*dpr,0,7);c.fill();c.stroke()}}}
+  if(hover&&hover.t){const [x,y]=w2s(hover.t.i*500-250,hover.t.j*500+250);c.strokeStyle="#fff";c.lineWidth=2*dpr;c.strokeRect(x,y,tp,tp)}
+  const LG={img:"",qa:["A","B","C","D","F"].map(g=>`<span><i style="background:${GC[g]}"></i>${g}</span>`).join(""),st:`<span><i style="background:#ffd36b"></i>avenues</span><span><i style="background:#fff"></i>collectors</span><span><i style="background:#aacdff"></i>local</span>`,mt:D.lines.map(l=>`<span><i style="background:${l.c}"></i>${l.ref}</span>`).join("")};
+  $("legend").innerHTML=LG[mode]}
+img.onload=draw; sm.onload=draw;
+function setMode(m){mode=m;for(const b of document.querySelectorAll(".modes button"))b.setAttribute("aria-pressed",String(b.dataset.m===m));draw()}
+for(const b of document.querySelectorAll(".modes button"))b.onclick=()=>setMode(b.dataset.m);
+function zoomAt(f,px,py){const [wx,wy]=s2w(px,py);scale*=f;clamp();const [nx,ny]=w2s(wx,wy);ox+=px-nx;oy+=py-ny;clamp();draw()}
+$("zin").onclick=()=>zoomAt(1.6,cv.width/2,cv.height/2);$("zout").onclick=()=>zoomAt(1/1.6,cv.width/2,cv.height/2);
+cv.addEventListener("wheel",e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(e.deltaY<0?1.25:.8,(e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr)},{passive:false});
+let drag=null,moved=0;
+cv.addEventListener("pointerdown",e=>{drag=[e.clientX,e.clientY,ox,oy];moved=0;cv.setPointerCapture(e.pointerId);cv.classList.add("drag")});
+cv.addEventListener("pointerup",e=>{cv.classList.remove("drag");if(drag&&moved<5)pick(e);drag=null});
+cv.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*dpr,py=(e.clientY-r.top)*dpr;
+  if(drag){moved=Math.hypot(e.clientX-drag[0],e.clientY-drag[1]);ox=drag[2]+(e.clientX-drag[0])*dpr;oy=drag[3]+(e.clientY-drag[1])*dpr;clamp();draw();return}
+  const [wx,wy]=s2w(px,py),t=TL[`T_${Math.round(wx/500)<0?"m"+(-Math.round(wx/500)):"p"+Math.round(wx/500)}_${Math.round(wy/500)<0?"m"+(-Math.round(wy/500)):"p"+Math.round(wy/500)}`];
+  const s=nearest(wx,wy,Math.max(12,40/scale));hover={t};
+  if(s){$("bn").textContent=s[0];$("ba").textContent=s[1]||"";$("banner").style.opacity=1}else{$("banner").style.opacity=t?0.0:0}
+  draw()});
+cv.addEventListener("pointerleave",()=>{hover=null;$("banner").style.opacity=0;draw()});
+function pick(e){const r=cv.getBoundingClientRect(),[wx,wy]=s2w((e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr);const i=Math.round(wx/500),j=Math.round(wy/500);
+  const t=D.tiles.find(q=>q.i===i&&q.j===j);if(!t)return;const tc=$("tilecard");tc.hidden=false;
+  tc.innerHTML=`<div class="g" style="background:${GC[t.g]}">${t.g}</div><div class="t">${t.t} <span style="color:var(--mute);font-weight:400">· ${t.ar.join(" · ")||"–"}</span></div><div class="s">${fmt(t.b)} buildings · ${fmt(t.tr)} trees · ${fmt(t.po)} poles · ${t.st} streets${t.pl?` · ${t.pl} name plates`:""}<br>${t.sl.slice(0,10).join(", ")}${t.sl.length>10?"…":""}</div>`}
+new ResizeObserver(size).observe(card); size();
+// initial view: centred on Paulista / MASP
+scale=1.6; const [mx,my]=w2s(0,-300); ox=cv.width/2-mx; oy=cv.height/2-my; clamp(); draw();
+
+// ---------------- metro plan + profile
+const UNDER=new Set(["1","2","3","4","5","6"]); let sel=D.lines.find(l=>l.ref==="4")||D.lines[0];
+function plan(){const s=600/W,px=x=>(x-X0)*s,py=y=>(Y1-y)*s;let h=`<rect width="600" height="600" fill="var(--bg)"/>`;
+  h+=`<image href="img/mosaic_sm.jpg" x="0" y="0" width="600" height="600" opacity=".28"/>`;
+  for(const l of D.lines){const on=l===sel;h+=`<polyline points="${l.xy.map(p=>px(p[0]).toFixed(1)+","+py(p[1]).toFixed(1)).join(" ")}" fill="none" stroke="${l.c}" stroke-width="${on?5:2.6}" stroke-linecap="round" stroke-linejoin="round" opacity="${on?1:.55}"/>`}
+  for(const l of D.lines)for(const s of l.st){h+=`<circle class="st" data-l="${l.ref}" data-n="${s.n}" cx="${px(s.x).toFixed(1)}" cy="${py(s.y).toFixed(1)}" r="${l===sel?4.6:3}" fill="var(--paper)" stroke="${l.c}" stroke-width="2"/>`}
+  $("plan").innerHTML=h;
+  for(const c of $("plan").querySelectorAll(".st")){c.onmouseenter=()=>{const l=D.lines.find(x=>x.ref===c.dataset.l),s=l.st.find(x=>x.n===c.dataset.n);$("stinfo").innerHTML=`<b style="color:var(--ink)">${s.n}</b> · ${l.name} · ${s.k==="tunnel"?`${s.d} m below street`:s.k}<br><span style="font-size:12px">${s.src}</span>`};c.onclick=()=>{sel=D.lines.find(x=>x.ref===c.dataset.l);chips();plan();prof()}}}
+function chips(){$("lchips").innerHTML=D.lines.map(l=>`<button class="chip" aria-pressed="${l===sel}" data-r="${l.ref}"><i style="background:${l.c}"></i>${l.name.replace("Linha ","L")}</button>`).join("");
+  for(const b of $("lchips").children)b.onclick=()=>{sel=D.lines.find(l=>l.ref===b.dataset.r);chips();plan();prof()}}
+function prof(){const l=sel,P=l.pr;if(!P.length)return;const Wd=760,Hd=330,ml=46,mr=12,mt=16,mb=34;
+  const smax=P[P.length-1][0],zs=P.flatMap(p=>[p[1],p[2]]),zmin=Math.floor((Math.min(...zs)-4)/10)*10,zmax=Math.ceil((Math.max(...zs)+6)/10)*10;
+  const X=s=>ml+(Wd-ml-mr)*s/smax,Y=z=>mt+(Hd-mt-mb)*(zmax-z)/(zmax-zmin);let h="";
+  for(let z=zmin;z<=zmax;z+=20){h+=`<line x1="${ml}" x2="${Wd-mr}" y1="${Y(z)}" y2="${Y(z)}" stroke="var(--line)"/><text x="${ml-6}" y="${Y(z)+4}" text-anchor="end" font-size="11" fill="var(--mute)">${z}</text>`}
+  for(let k=0;k<=smax/1000;k+=2){h+=`<text x="${X(k*1000)}" y="${Hd-12}" text-anchor="middle" font-size="11" fill="var(--mute)">${k} km</text>`}
+  h+=`<path d="M${X(0)},${Y(zmax)} ${P.map(p=>`L${X(p[0]).toFixed(1)},${Y(p[2]).toFixed(1)}`).join(" ")} L${X(smax)},${Y(zmax)} Z" fill="var(--line)" opacity=".55"/>`;
+  h+=`<polyline points="${P.map(p=>`${X(p[0]).toFixed(1)},${Y(p[2]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--mute)" stroke-width="1.2"/>`;
+  h+=`<polyline points="${P.map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ")}" fill="none" stroke="${l.c}" stroke-width="3.2" stroke-linejoin="round"/>`;
+  l.st.forEach((s,k)=>{const n=P.reduce((b,p)=>Math.abs(p[0]-s.ch)<Math.abs(b[0]-s.ch)?p:b,P[0]);const x=X(s.ch),y=Y(n[1]);h+=`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--paper)" stroke="${l.c}" stroke-width="2.4"/><text x="${x}" y="${y+(k%2?18:-10)}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)">${s.n.length>16?s.n.slice(0,15)+"…":s.n}</text>`});
+  h+=`<text x="${ml}" y="${mt-3}" font-size="11" fill="var(--mute)">ground ▲ · track ━ (${l.m||""})</text>`;
+  $("prof").innerHTML=h}
+chips();plan();prof();
+})();
+</script>
+
+</body></html>
