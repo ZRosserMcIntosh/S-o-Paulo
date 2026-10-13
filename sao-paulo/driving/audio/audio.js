@@ -26,14 +26,10 @@ export class CarAudio {
     for (let i = 0; i < d.length; ++i) d[i] = Math.random() * 2 - 1;
     const noise = () => { const s = ctx.createBufferSource(); s.buffer = nb; s.loop = true; s.start(); return s; };
 
-    // tyre squeal: tonal-ish band of noise that shifts with slip
-    this.squealF = ctx.createBiquadFilter(); this.squealF.type = 'bandpass'; this.squealF.frequency.value = 1100; this.squealF.Q.value = 9;
-    const sq2 = ctx.createBiquadFilter(); sq2.type = 'bandpass'; sq2.frequency.value = 2300; sq2.Q.value = 6;
-    this.squealG = ctx.createGain(); this.squealG.gain.value = 0;
-    const sqSrc = noise();
-    sqSrc.connect(this.squealF).connect(this.squealG); sqSrc.connect(sq2).connect(this.squealG);
-    this.squealG.connect(this.master);
-    this.squealF2 = sq2;
+    // tyres: stick-slip squeal + sliding scrub (synthesized in the worklet)
+    this.tyre = new AudioWorkletNode(ctx, 'tyre-noise', { numberOfInputs: 0, outputChannelCount: [2] });
+    this.tyreGain = ctx.createGain(); this.tyreGain.gain.value = 0.85;
+    this.tyre.connect(this.tyreGain).connect(this.master);
     // wind
     const wf = ctx.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 700;
     this.windG = ctx.createGain(); this.windG.gain.value = 0;
@@ -52,7 +48,7 @@ export class CarAudio {
     this.volume = v;
     if (this.master && this.enabled) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
   }
-  // st: { rpm, load, limiter, gear, speed (m/s), slip (0..), interior (bool) }
+  // st: { rpm, load, limiter, gear, speed (m/s), tyre: { squeal, scrub, pitch }, interior (bool) }
   update(st) {
     if (!this.ready) return;
     const t = this.ctx.currentTime, P = this.engine.parameters;
@@ -65,10 +61,12 @@ export class CarAudio {
     P.get('cut').setValueAtTime(t < this.cutUntil ? 1 : 0, t);
     P.get('interior').setTargetAtTime(st.interior ? 1 : 0, t, 0.08);
     const v = Math.abs(st.speed);
-    const sq = Math.max(0, Math.min(1, (st.slip - 0.95) * 1.6)) * Math.min(1, v / 4);
-    this.squealG.gain.setTargetAtTime(sq * 0.55, t, 0.04);
-    this.squealF.frequency.setTargetAtTime(950 + 380 * Math.min(1, st.slip - 0.9), t, 0.05);
-    this.squealF2.frequency.setTargetAtTime(2100 + 500 * Math.min(1, st.slip - 0.9), t, 0.05);
+    const TP = this.tyre.parameters, ty = st.tyre;
+    TP.get('squeal').setTargetAtTime(ty.squeal, t, 0.03);
+    TP.get('scrub').setTargetAtTime(ty.scrub, t, 0.03);
+    TP.get('pitch').setTargetAtTime(ty.pitch, t, 0.05);
+    TP.get('speed').setTargetAtTime(v, t, 0.05);
+    this.tyreGain.gain.setTargetAtTime(st.interior ? 0.5 : 0.85, t, 0.1);
     const wind = Math.min(1, (v / 70) ** 2);
     this.windG.gain.setTargetAtTime(wind * (st.interior ? 0.12 : 0.3), t, 0.1);
     this.roadG.gain.setTargetAtTime(Math.min(1, v / 45) * (st.interior ? 0.35 : 0.22), t, 0.1);

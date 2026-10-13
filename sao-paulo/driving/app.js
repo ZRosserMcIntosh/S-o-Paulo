@@ -26,7 +26,7 @@ const HEADER = M._ord_state_header(), PER_WHEEL = M._ord_state_per_wheel();
 const statePtr = M._ord_state() / 8;
 const S = (i) => M.HEAPF64[statePtr + i];
 const W = (w, i) => M.HEAPF64[statePtr + HEADER + PER_WHEEL * w + i];
-const LIMITER = [7200, 6500, 6800, 8500, 12500];
+const LIMITER = [7200, 6500, 6800, 8500, 12500, 11000];
 const G = 9.81;
 
 // ISO 8855 (x forward, y left, z up) -> three.js (y up): (x, z, -y)
@@ -34,7 +34,7 @@ const v3 = (x, y, z) => new THREE.Vector3(x, z, -y);
 
 // ---------- Settings ----------
 const settings = {
-  car: store.get('car', 0),
+  car: store.get('stellaPhysics', false) ? store.get('car', 5) : 5, // the Stella's own physics is the default
   preset: store.get('preset', 0),
   abs: true, tcs: 2, esc: 2, auto: true,
   cam: store.get('cam', 0),
@@ -48,10 +48,24 @@ Object.assign(settings, presetAids(settings.preset));
 
 // ---------- Renderer & scene ----------
 const canvas = $('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// Phones and tablets: lighter car model, no MSAA, smaller shadows, and a render resolution that
+// adapts to the frame rate (see adaptRes below).
+const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !MOBILE, powerPreference: 'high-performance' });
+const RES = { max: Math.min(devicePixelRatio, MOBILE ? 1.5 : 2), min: MOBILE ? 0.6 : 1, cur: 0, acc: 0, n: 0 };
+RES.cur = MOBILE ? Math.min(RES.max, 1.1) : RES.max;
+renderer.setPixelRatio(RES.cur);
+function adaptRes(dt) {
+  RES.acc += dt; RES.n++;
+  if (RES.acc < 1.5) return;
+  const avg = RES.acc / RES.n; RES.acc = 0; RES.n = 0;
+  let next = RES.cur;
+  if (avg > 1 / 40) next = Math.max(RES.min, RES.cur * 0.85);       // under ~40 fps: drop resolution
+  else if (avg < 1 / 57) next = Math.min(RES.max, RES.cur * 1.07);  // comfortably fast: raise it
+  if (Math.abs(next - RES.cur) > 0.01) { RES.cur = next; renderer.setPixelRatio(next); resize(); }
+}
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 const scene = new THREE.Scene();
@@ -62,7 +76,7 @@ const camera = new THREE.PerspectiveCamera(60, 1, 0.2, 2000);
 scene.add(new THREE.HemisphereLight('#dbe8ff', '#4a4136', 1.4));
 const sun = new THREE.DirectionalLight('#fff4e0', 2.4);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 200 });
 sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
@@ -359,6 +373,13 @@ async function loadModel(buffer, name, announce = true) {
   const rigs = [null, null, null, null];
   const hasWheels = quads.every((q) => q.length > 0);
   if (hasWheels) {
+    // Line the model's axles up with the physics axles (not just the body's bounding box).
+    const cx = (meshes) => { const b = new THREE.Box3(); for (const m of meshes) b.union(new THREE.Box3().setFromObject(m)); return carRoot.worldToLocal(b.getCenter(new THREE.Vector3())).x; };
+    const modelMid = (cx([...quads[0], ...quads[1]]) + cx([...quads[2], ...quads[3]])) / 2;
+    inner.position.x += (xf + xr) / 2 - modelMid;
+    inner.updateMatrixWorld(true); carRoot.updateMatrixWorld(true);
+  }
+  if (hasWheels) {
     quads.forEach((meshes, w) => {
       const box = new THREE.Box3();
       for (const m of meshes) box.union(new THREE.Box3().setFromObject(m));
@@ -490,7 +511,7 @@ $('aTcs').onclick = () => { settings.tcs = (settings.tcs + 1) % 3; applyAids(); 
 $('aEsc').onclick = () => { settings.esc = (settings.esc + 1) % 3; applyAids(); };
 $('aBox').onclick = () => { settings.auto = !settings.auto; applyAids(); };
 $('car').value = settings.car;
-$('car').onchange = (e) => { settings.car = +e.target.value; store.set('car', settings.car); createCar(); e.target.blur(); };
+$('car').onchange = (e) => { settings.car = +e.target.value; store.set('car', settings.car); store.set('stellaPhysics', true); createCar(); e.target.blur(); };
 $('bReset').onclick = (e) => { placeAt(ZONES[0]); e.currentTarget.blur(); };
 $('bCam').onclick = (e) => { cycleCam(); e.currentTarget.blur(); };
 function togglePanel() {
@@ -524,14 +545,14 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', () => keys.clear());
-const touch = { steer: 0, gas: 0, brake: 0 };
+const touch = { steer: 0, gas: 0, brake: 0, hand: 0 };
 function bindHold(id, prop) {
   const el = $(id);
   el.addEventListener('pointerdown', (e) => { el.setPointerCapture(e.pointerId); touch[prop] = 1; el.classList.add('on'); });
   const up = () => { touch[prop] = 0; el.classList.remove('on'); };
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
-bindHold('tGas', 'gas'); bindHold('tBrake', 'brake');
+bindHold('tGas', 'gas'); bindHold('tBrake', 'brake'); bindHold('tHand', 'hand');
 {
   const el = $('tSteer'), knob = el.querySelector('i');
   const set = (e) => {
@@ -574,7 +595,7 @@ function readInput(dt, gear, speed) {
     pad.prev = gp.buttons.map((b) => b.pressed);
   }
   if (Math.abs(touch.steer) > Math.abs(steer)) steer = touch.steer;
-  up = Math.max(up, touch.gas); down = Math.max(down, touch.brake);
+  up = Math.max(up, touch.gas); down = Math.max(down, touch.brake); hand = Math.max(hand, touch.hand);
   // Automatic gearbox: hold brake at a standstill to engage reverse, then "brake" drives backwards.
   let throttle = up, brake = down;
   if (settings.auto) {
@@ -871,6 +892,28 @@ function updateSkids() {
 window.__spwSkid = skid; // debugging
 function resetSkidTrail() { skid.last = [null, null, null, null]; }
 
+// ---------- Mobile niceties ----------
+{
+  const el = document.documentElement;
+  const fs = el.requestFullscreen ? () => el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen ? () => el.webkitRequestFullscreen() : null;
+  const b = $('bFull');
+  if (fs && MOBILE) {
+    b.hidden = false;
+    b.onclick = async (e) => {
+      e.currentTarget.blur();
+      try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        else { await fs(); await screen.orientation?.lock?.('landscape').catch(() => {}); }
+      } catch { /* not allowed here */ }
+    };
+  }
+  if (MOBILE && innerHeight > innerWidth) setTimeout(() => toast('Tip: turn your phone sideways for a wider view'), 1500);
+  // no pinch-zoom / double-tap zoom of the page itself (the canvas handles its own pinch)
+  addEventListener('gesturestart', (e) => e.preventDefault());
+  let lastTap = 0;
+  addEventListener('touchend', (e) => { const n = Date.now(); if (n - lastTap < 320 && !(e.target instanceof Element && e.target.closest('button,input,select,a'))) e.preventDefault(); lastTap = n; }, { passive: false });
+}
+
 // ---------- Sound ----------
 const audio = new CarAudio();
 window.__spwAudio = audio; // for debugging in the console
@@ -891,17 +934,35 @@ $('vol').value = Math.round(audio.volume * 100);
 $('vol').oninput = (e) => { audio.setVolume(+e.target.value / 100); store.set('volume', audio.volume); };
 setSound(audio.enabled);
 addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm' && !e.repeat && !(e.target instanceof HTMLInputElement)) { setSound(!audio.enabled); toast(audio.enabled ? 'Sound on' : 'Sound off'); } });
-function maxSlip() {
-  let m = 0;
-  for (let w = 0; w < 4; ++w) if (W(w, 11) > 0) m = Math.max(m, Math.abs(W(w, 7)) / 0.12, Math.abs(W(w, 8)) / 0.12);
-  return m;
+// Tyre noise from the physics: squeal near and just past the grip peak, scrub when a tyre is
+// sliding well past it or locked. Both need real sliding speed at the contact patch.
+const tyreSnd = { squeal: 0, scrub: 0, pitch: 0 };
+function tyreState() {
+  let sq = 0, sc = 0, pitch = 0;
+  const v = S(7);
+  for (let w = 0; w < 4; ++w) {
+    if (!(W(w, 11) > 0)) continue;
+    const kappa = Math.abs(W(w, 7)), alpha = Math.abs(W(w, 8));
+    const norm = Math.max(kappa / 0.12, alpha / 0.12);
+    const slipSpeed = Math.hypot(W(w, 5) * W(w, 3) - v, Math.tan(Math.min(1.4, alpha)) * Math.abs(v));
+    const loadF = Math.max(0.4, Math.min(1.4, W(w, 6) / 4000));
+    const bell = Math.min(1, Math.max(0, (norm - 0.9) / 0.5)) * (norm < 2.5 ? 1 : Math.max(0.35, 1 - (norm - 2.5) / 3));
+    sq = Math.max(sq, bell * Math.min(1, slipSpeed / 2) * loadF);
+    let s = Math.min(1, Math.max(0, (norm - 1.8) / 2.5)) * Math.min(1, slipSpeed / 4) * loadF;
+    if (W(w, 12) > 0) s = Math.max(s, Math.min(1, Math.abs(v) / 10) * loadF);
+    sc = Math.max(sc, s);
+    pitch = Math.max(pitch, Math.min(1, Math.max(0, (norm - 1) / 2)));
+  }
+  tyreSnd.squeal = Math.min(1, sq); tyreSnd.scrub = Math.min(1, sc); tyreSnd.pitch = pitch;
+  return tyreSnd;
 }
 
 // ---------- Main loop ----------
 createCar();
-const savedModel = await fetch('models/car.glb', { method: 'HEAD' }).then((r) => (r.ok ? true : false)).catch(() => false);
+const MODEL_URL = MOBILE ? 'models/car_mobile.glb' : 'models/car.glb';
+const savedModel = await fetch(MODEL_URL, { method: 'HEAD' }).then((r) => (r.ok ? true : false)).catch(() => false);
 if (savedModel) {
-  try { await loadModel(await (await fetch('models/car.glb')).arrayBuffer(), 'Rosser Stella V8', false); }
+  try { await loadModel(await (await fetch(MODEL_URL)).arrayBuffer(), 'Rosser Stella V8', false); }
   catch (e) { console.warn('models/car.glb failed to load', e); }
 }
 $('loading').remove();
@@ -909,6 +970,7 @@ let last = performance.now();
 const qIso = new THREE.Quaternion();
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  adaptRes(dt);
   const inp = readInput(dt, S(15), S(7));
   M._ord_set_input(inp.steer, inp.throttle, inp.brake, inp.hand, inp.shiftUp ? 1 : 0, inp.shiftDown ? 1 : 0);
   M._ord_advance(dt);
@@ -933,7 +995,7 @@ function frame(now) {
   updateHud(dt, inp);
   updateLights(S(15) === -1 ? 0 : inp.brake);
   updateSkids();
-  audio.update({ rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), slip: maxSlip(), interior: settings.cam === 2 });
+  audio.update({ rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), tyre: tyreState(), interior: settings.cam === 2 });
   recordRow();
   const z = zoneAt(S(0), S(1));
   if (z !== currentZone) { currentZone = z; $('zone').textContent = z; $('zone').classList.toggle('on', !!z); }
