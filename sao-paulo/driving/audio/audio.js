@@ -39,6 +39,15 @@ export class CarAudio {
     this.roadG = ctx.createGain(); this.roadG.gain.value = 0;
     noise().connect(rf).connect(this.roadG).connect(this.master);
     this.ready = true;
+    this.keepAlive();
+  }
+  // iOS can suspend or 'interrupt' the context (calls, app switch, silent switch); resume on the
+  // next interaction or when the page becomes visible again.
+  keepAlive() {
+    const kick = () => { if (this.ctx && this.ctx.state !== 'running' && this.enabled) this.ctx.resume().catch(() => {}); };
+    addEventListener('pointerdown', kick); addEventListener('keydown', kick);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+    this.ctx?.addEventListener?.('statechange', () => { if (this.ctx.state === 'interrupted') setTimeout(kick, 300); });
   }
   setEnabled(on) {
     this.enabled = on;
@@ -52,13 +61,14 @@ export class CarAudio {
   update(st) {
     if (!this.ready) return;
     const t = this.ctx.currentTime, P = this.engine.parameters;
-    // upshift under power: short ignition cut (the "bwaap" between gears)
-    if (this.lastGear !== null && st.gear > this.lastGear && st.gear > 1 && st.load > 0.3) this.cutUntil = t + 0.075;
-    this.lastGear = st.gear;
-    P.get('rpm').setTargetAtTime(st.rpm, t, 0.01);
-    P.get('load').setTargetAtTime(st.load, t, 0.02);
+    // Follow the physics as tightly as the frame rate allows: the time constant is about half a
+    // frame, so a slow phone frame doesn't turn into audible lag, and a fast one doesn't zipper.
+    // Gear changes need no special handling: the physics drops the revs itself during a shift.
+    const tau = Math.max(0.004, Math.min(0.03, (st.dt || 1 / 60) * 0.5));
+    P.get('rpm').setTargetAtTime(st.rpm, t, tau);
+    P.get('load').setTargetAtTime(st.load, t, tau);
     P.get('limiter').setValueAtTime(st.limiter, t);
-    P.get('cut').setValueAtTime(t < this.cutUntil ? 1 : 0, t);
+    P.get('cut').setValueAtTime(0, t);
     P.get('interior').setTargetAtTime(st.interior ? 1 : 0, t, 0.08);
     const v = Math.abs(st.speed);
     const TP = this.tyre.parameters, ty = st.tyre;

@@ -1,6 +1,5 @@
-// Flat-plane-crank V8 engine synthesizer (AudioWorklet), voiced towards a high-revving,
-// F1-style shriek (think Lexus LFA): clean pulse train, little low-rpm burble, strong upper
-// orders, a tuned intake howl and a resonance that tracks twice the firing frequency.
+// Flat-plane-crank V8 engine synthesizer (AudioWorklet). Voicing: Ferrari 458 / Porsche GT3 RS
+// territory - a beefy, loping idle that cleans up into a hard, raspy wail at 11,000 rpm.
 // Physically inspired: every combustion event is a pressure pulse sent down one of the two
 // exhaust banks (flat-plane cranks alternate banks, so each bank sees evenly spaced pulses -
 // the source of the high, smooth "scream"). Pulses ring a set of pipe resonances and a
@@ -20,8 +19,8 @@ class EngineSynth {
     this.rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     // Per-cylinder character: small, fixed differences in pulse strength and timing give the
     // half-order "burble" at low rpm that a perfectly even pulse train would not have.
-    this.cylAmp = Array.from({ length: 8 }, () => 0.97 + 0.06 * this.rand());
-    this.cylTime = Array.from({ length: 8 }, () => (this.rand() - 0.5) * 0.002);
+    this.cylAmp = Array.from({ length: 8 }, () => 0.8 + 0.4 * this.rand());
+    this.cylTime = Array.from({ length: 8 }, () => (this.rand() - 0.5) * 0.01);
     this.phase = 0; // 0..1 per four-stroke cycle (two crank revolutions)
     this.nextEvent = 0;
     this.rpm = 1000; this.load = 0; this.cutS = 0;
@@ -29,18 +28,16 @@ class EngineSynth {
     // Two exhaust banks, each with its own resonators (slightly detuned = stereo width).
     const mk = (f, tau, g) => ({ f, tau, g, y1: 0, y2: 0, a1: 0, a2: 0 });
     this.banks = [0, 1].map((b) => ({
-      res: [mk(130 + b * 6, 0.010, 0.42), mk(380 + b * 14, 0.006, 0.45), mk(760 + b * 25, 0.004, 0.65), mk(1550 + b * 60, 0.0028, 0.6), mk(3000 + b * 120, 0.0018, 0.42), mk(5600 + b * 200, 0.001, 0.2)],
+      res: [mk(58 + b * 4, 0.03, 0.8), mk(92 + b * 6, 0.016, 0.9), mk(300 + b * 14, 0.007, 0.55), mk(690 + b * 25, 0.0045, 0.5), mk(1480 + b * 60, 0.003, 0.32), mk(3100 + b * 120, 0.0016, 0.16)],
       comb: new Float32Array(4096), ci: 0, combLen: Math.round(sr * (0.0093 + b * 0.0004)),
       exc: 0, excLeft: 0, excAmp: 0,
-      hp: 0, hpx: 0, lp: 0,
+      hp: 0, hpx: 0, lp: 0, zx: 0, zh: 0,
     }));
     this.banks.forEach((bk) => bk.res.forEach((r) => this.tune(r)));
     // Intake: a bright resonator excited by every event, strongest at high rpm and full load.
-    this.intake = [mk(2300, 0.003, 1.1), mk(4600, 0.0015, 0.6)];
-    // Order-tracking resonance at twice the firing frequency (retuned every block).
-    this.track = [mk(1000, 0.012, 1), mk(1000, 0.012, 1)];
+    this.intake = [mk(1900, 0.0025, 1), mk(3600, 0.0012, 0.5)];
     this.intake.forEach((r) => this.tune(r));
-    this.pulseW = sr * 0.0003; // pulse length in samples (fractional)
+    this.pulseW = sr * 0.0005; // pulse length in samples (fractional)
     this.t = 0;
     this.banks.forEach((bk) => (bk.pulses = []));
     this.ik = [];
@@ -73,10 +70,8 @@ class EngineSynth {
   // Render n samples of stereo into L and R.
   render(L, R, n, p) {
     const sr = this.sr;
-    const kS = 1 - Math.exp(-1 / (0.012 * sr)); // parameter smoothing
+    const kS = 1 - Math.exp(-1 / (0.004 * sr)); // parameter smoothing (short: no audible lag)
     const inter = p.interior;
-    // retune the order tracker: 2 x firing frequency (V8: 4 events per revolution)
-    for (const r of this.track) { r.f = Math.min(sr * 0.45, (Math.max(600, this.rpm) / 60) * 8); this.tune(r); }
     // rpm fall rate (rpm/s), smoothed per block: drives overrun pops
     const drop = (this.prevRpm - p.rpm) * (sr / n);
     this.decel = 0.85 * this.decel + 0.15 * Math.max(0, drop);
@@ -98,17 +93,21 @@ class EngineSynth {
       // Firing events: 8 per cycle, even spacing, banks alternate (flat-plane).
       // Event times are kept to a fraction of a sample: rounding them would smear the
       // high harmonics into noise at high rpm.
-      while (this.nextEvent < 8 && this.phase >= this.nextEvent / 8 + this.cylTime[this.nextEvent]) {
+      const tScale = Math.max(0.15, 1 - rpmN);
+      while (this.nextEvent < 8 && this.phase >= this.nextEvent / 8 + this.cylTime[this.nextEvent] * tScale) {
         const c = this.nextEvent;
-        const ago = (this.phase - (c / 8 + this.cylTime[c])) / dp; // samples since the event
+        const ago = (this.phase - (c / 8 + this.cylTime[c] * tScale)) / dp; // samples since the event
         this.nextEvent++;
         const bk = this.banks[c & 1];
         const cutNow = Math.max(this.cutS, limiterCut);
         // Combustion strength: strong on load, weak pumping pulses when coasting.
-        let e = (0.14 + 0.86 * Math.pow(load, 0.8)) * this.cylAmp[c] * (0.98 + 0.04 * this.rand());
+        const lope = Math.max(0, 1 - rpmN * 1.6); // uneven, loping pulses at idle, even at speed
+        let e = (0.22 + 0.78 * Math.pow(load, 0.8)) * (1 + (this.cylAmp[c] - 1) * lope) * (0.98 + 0.04 * this.rand());
         if (cutNow > 0.5) e = 0.1 * this.cylAmp[c];
         // Overrun: unburnt fuel popping in the exhaust when lifting at high rpm.
-        if (load < 0.08 && rpm > 3200 && this.decel > 300 && this.rand() < 0.035 + 0.08 * Math.min(1, this.decel / 4000)) this.pop = 0.6 + 0.7 * this.rand();
+        if (load < 0.08 && rpm > 2800 && this.decel > 200 && this.rand() < 0.05 + 0.1 * Math.min(1, this.decel / 4000)) this.pop = 0.7 + 0.8 * this.rand();
+        // burble: occasional weak/strong pulses on a closed throttle
+        if (load < 0.08 && rpm > 2000) e *= 0.5 + 1.1 * this.rand();
         if (cutNow > 0.5 && this.rand() < 0.3) this.pop = Math.max(this.pop, 0.5 * this.rand() + 0.3);
         bk.pulses.push(this.t - ago, e);
         this.ik.push(this.t - ago, e);
@@ -125,9 +124,13 @@ class EngineSynth {
         for (const r of bk.res) y += this.ring(r, x);
         // open-ended pipe: negative reflection
         const d = bk.comb[(bk.ci - bk.combLen + 4096) & 4095];
-        const z = y - 0.2 * d;
+        const z = y - 0.35 * d;
         bk.comb[bk.ci] = z; bk.ci = (bk.ci + 1) & 4095;
-        out[b] = z + this.ring(this.track[b], z) * 0.55 * Math.min(1, rpmN * 1.25) * (0.3 + 0.7 * load);
+        // Remove the DC the one-sided pressure pulses build up in the low resonances *before*
+        // saturation; otherwise dense pulse trains at higher rpm push the clipper into a flat
+        // rail and the engine sound drops out.
+        const zh = z - bk.zx + 0.996 * bk.zh; bk.zx = z; bk.zh = zh;
+        out[b] = zh;
       }
       this.pop *= 0.9965;
       if (this.pop < 0.01) this.pop = 0;
@@ -138,7 +141,7 @@ class EngineSynth {
       this.air += ((this.rand() * 2 - 1) - this.air) * 0.25;
       const air = this.air * 0.03 * load * rpmN * rpmN;
       for (const r of this.intake) ik += this.ring(r, ix);
-      ik *= (0.15 + 0.85 * load) * Math.pow(rpmN, 1.4) * (0.6 + 0.4 * inter);
+      ik *= (0.15 + 0.85 * load) * Math.pow(rpmN, 1.6) * (0.35 + 0.65 * inter);
       // Valvetrain / gear whine: faint tone that rises with rpm.
       this.whine += (rpm / 60) * 24 / sr; if (this.whine > 1) this.whine -= 1;
       const wh = Math.sin(2 * Math.PI * this.whine) * 0.012 * rpmN;
@@ -150,20 +153,21 @@ class EngineSynth {
         let v = Math.max(-1, Math.min(1, out[b] * drive * 0.9));
         v = (1.5 * v - 0.5 * v * v * v) * 1.4;
         // cabin: muffle the exhaust
-        const cut = 0.16 + 0.84 * (1 - inter) ;
+        // Tone tilt: darker at low rpm, opening up with revs, but never thin (no motorcycle buzz).
+        const open = Math.min(0.95, 0.32 + 0.45 * rpmN + 0.12 * load);
+        const cut = open * (0.2 + 0.8 * (1 - inter));
         bk.lp += (v - bk.lp) * cut;
-        v = bk.lp + ik * 0.8 + wh + air;
+        v = bk.lp + ik * 0.6 + wh + air;
         // DC / sub-sonic block
         const hp = v - bk.hpx + 0.995 * bk.hp; bk.hpx = v; bk.hp = hp;
         out[b] = hp;
       }
-      const loud = 0.42 * (0.55 + 0.45 * Math.min(1, rpmN * 1.3));
+      const loud = 0.42 * (0.78 + 0.22 * Math.min(1, rpmN * 1.3));
       L[i] = Math.tanh((out[0] * 0.72 + out[1] * 0.28) * loud);
       R[i] = Math.tanh((out[1] * 0.72 + out[0] * 0.28) * loud);
     }
   }
 }
-
 
 // Tyre noise. Two mechanisms:
 //  squeal - stick-slip of the tread at and just past the grip peak: a tonal whistle around
@@ -258,3 +262,4 @@ if (typeof registerProcessor !== 'undefined') {
   });
 }
 if (typeof module !== 'undefined') module.exports = { EngineSynth, TyreSynth };
+

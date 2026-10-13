@@ -1012,7 +1012,7 @@ function frame(now) {
   updateHud(dt, inp);
   updateLights(S(15) === -1 ? 0 : inp.brake);
   updateSkids();
-  audio.update({ rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), tyre: tyreState(), interior: settings.cam === 2 });
+  audio.update({ dt, rpm: S(14), load: S(17), limiter: LIMITER[settings.car], gear: S(15), speed: S(7), tyre: tyreState(), interior: settings.cam === 2 });
   recordRow();
   const z = zoneAt(S(0), S(1));
   if (z !== currentZone) { currentZone = z; $('zone').textContent = z; $('zone').classList.toggle('on', !!z); }
