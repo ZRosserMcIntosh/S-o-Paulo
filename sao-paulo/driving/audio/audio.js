@@ -31,16 +31,25 @@ export class CarAudio {
     await ctx.audioWorklet.addModule(new URL('./engine-worklet.js', import.meta.url));
     if (ctx !== this.ctx) return; // replaced while loading
     this.master = ctx.createGain(); this.master.gain.value = this.enabled ? this.volume : 0;
+    // Gentle glue compressor, then a fast limiter as a safety net: nothing reaches full scale,
+    // so headphones never get slammed.
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -10; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.15;
-    this.master.connect(comp).connect(ctx.destination);
+    comp.threshold.value = -20; comp.knee.value = 10; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.2;
+    const limit = ctx.createDynamicsCompressor();
+    limit.threshold.value = -9; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.001; limit.release.value = 0.08;
+    const trim = ctx.createGain(); trim.gain.value = 0.8;
+    this.master.connect(comp).connect(limit).connect(trim).connect(ctx.destination);
 
     const beat = () => { this.lastBeat = performance.now(); };
     const onError = () => this.rebuild('worklet error');
     this.engine = new AudioWorkletNode(ctx, 'v8-engine', { numberOfInputs: 0, outputChannelCount: [2] });
     this.engine.port.onmessage = beat; this.engine.onprocessorerror = onError;
-    this.engineGain = ctx.createGain(); this.engineGain.gain.value = 0.9;
-    this.engine.connect(this.engineGain).connect(this.master);
+    // Engine voicing EQ: more body down low, the harsh 2-5 kHz band (what hurt in headphones)
+    // pulled back, and the fizzy top rolled off.
+    const eq = (type, f, gain, q = 0.8) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.gain.value = gain; b.Q.value = q; return b; };
+    const low = eq('lowshelf', 180, 8), body = eq('peaking', 380, 2.5, 0.9), harsh = eq('peaking', 3000, -8, 0.8), top = eq('highshelf', 5500, -8);
+    this.engineGain = ctx.createGain(); this.engineGain.gain.value = 0.55;
+    this.engine.connect(low).connect(body).connect(harsh).connect(top).connect(this.engineGain).connect(this.master);
 
     const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = nb.getChannelData(0);
     for (let i = 0; i < d.length; ++i) d[i] = Math.random() * 2 - 1;
@@ -48,7 +57,7 @@ export class CarAudio {
 
     this.tyre = new AudioWorkletNode(ctx, 'tyre-noise', { numberOfInputs: 0, outputChannelCount: [2] });
     this.tyre.onprocessorerror = onError;
-    this.tyreGain = ctx.createGain(); this.tyreGain.gain.value = 0.85;
+    this.tyreGain = ctx.createGain(); this.tyreGain.gain.value = 0.7;
     this.tyre.connect(this.tyreGain).connect(this.master);
     const wf = ctx.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 700;
     this.windG = ctx.createGain(); this.windG.gain.value = 0;
@@ -117,9 +126,9 @@ export class CarAudio {
     set(TP.get('scrub'), ok(ty.scrub, 0, 1), 0.03);
     set(TP.get('pitch'), ok(ty.pitch, 0, 1), 0.05);
     set(TP.get('speed'), v, 0.05);
-    this.tyreGain.gain.setTargetAtTime(st.interior ? 0.5 : 0.85, t, 0.1);
-    this.windG.gain.setTargetAtTime(Math.min(1, (v / 70) ** 2) * (st.interior ? 0.12 : 0.3), t, 0.1);
-    this.roadG.gain.setTargetAtTime(Math.min(1, v / 45) * (st.interior ? 0.35 : 0.22), t, 0.1);
-    this.engineGain.gain.setTargetAtTime(st.interior ? 0.75 : 0.9, t, 0.1);
+    this.tyreGain.gain.setTargetAtTime(st.interior ? 0.45 : 0.7, t, 0.1);
+    this.windG.gain.setTargetAtTime(Math.min(1, (v / 70) ** 2) * (st.interior ? 0.15 : 0.35), t, 0.1);
+    this.roadG.gain.setTargetAtTime(Math.min(1, v / 45) * (st.interior ? 0.4 : 0.3), t, 0.1);
+    this.engineGain.gain.setTargetAtTime(st.interior ? 0.45 : 0.55, t, 0.1);
   }
 }

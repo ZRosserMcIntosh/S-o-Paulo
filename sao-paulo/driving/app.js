@@ -236,6 +236,57 @@ const LANE_Y = M._ord_bump_lane_y();
   scene.add(lane);
   stripe(0, LANE_Y - 3, 40, LANE_Y - 3, 0.15); stripe(0, LANE_Y + 3, 40, LANE_Y + 3, 0.15);
 }
+// ---------- Proving ground (default start), west of the drag strip ----------
+// Everything here comes from the physics' own ground (ord_web.cpp): heights are sampled from
+// M._ord_ground_height, wet areas match its wet patches exactly.
+const PG = { bumpY: M._ord_proving_bump_y(), splitY: M._ord_proving_split_y(), x0: -440, x1: -110,
+  dry: { x: -300, y: 55, r: 30 }, wet: { x: -170, y: 55, r: 25 } };
+const wetMat = new THREE.MeshStandardMaterial({ color: '#1f2a36', roughness: 0.08, metalness: 0.35, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+function wetPlane(x0, x1, y0, y1) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), wetMat);
+  m.rotation.x = -Math.PI / 2; m.position.copy(v3((x0 + x1) / 2, (y0 + y1) / 2, 0.001)); m.receiveShadow = true; scene.add(m);
+}
+function ring(c, r, mat, w = 0.15) {
+  const g = new THREE.Mesh(new THREE.RingGeometry(r - w, r + w, 256), mat);
+  g.rotation.x = -Math.PI / 2; g.position.copy(v3(c.x, c.y, 0.003)); scene.add(g);
+}
+{
+  // central lane into the drag strip
+  stripe(-470, 6, -40, 6, 0.15); stripe(-470, -6, -40, -6, 0.15);
+  for (let x = -470; x < -40; x += 12) stripe(x, 0, x + 6, 0, 0.12);
+  // bump course: height field sampled from the physics
+  const x0 = PG.x0, x1 = PG.x1, y0 = PG.bumpY - 4, y1 = PG.bumpY + 4, dx = 0.1, dy = 0.1;
+  const nx = Math.round((x1 - x0) / dx) + 1, ny = Math.round((y1 - y0) / dy) + 1;
+  const pos = new Float32Array(nx * ny * 3), col = new Float32Array(nx * ny * 3), uv = new Float32Array(nx * ny * 2);
+  const base = new THREE.Color('#ffffff'), up = new THREE.Color('#f0c419'), down = new THREE.Color('#5aa0ff');
+  for (let j = 0; j < ny; ++j) for (let i = 0; i < nx; ++i) {
+    const x = x0 + i * dx, y = y0 + j * dy, h = M._ord_ground_height(x, y), k = j * nx + i;
+    pos.set([x, h, -y], k * 3); uv.set([x / 5, y / 5], k * 2);
+    const c = h > 0.004 ? up : h < -0.004 ? down : base;
+    col.set([c.r, c.g, c.b], k * 3);
+  }
+  const idx = new Uint32Array((nx - 1) * (ny - 1) * 6);
+  let p = 0;
+  for (let j = 0; j < ny - 1; ++j) for (let i = 0; i < nx - 1; ++i) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; idx.set([a, b, c, b, d, c], p); p += 6; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(new THREE.BufferAttribute(idx, 1));
+  geo.computeVertexNormals();
+  const tex = asphalt.clone(); tex.needsUpdate = true;
+  const lane = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  lane.receiveShadow = true; lane.position.y = 0.001; scene.add(lane);
+  stripe(x0, PG.bumpY - 4, x1, PG.bumpY - 4, 0.15); stripe(x0, PG.bumpY + 4, x1, PG.bumpY + 4, 0.15);
+  // split-mu lane: left wheel track wet
+  wetPlane(PG.x0, PG.x1, PG.splitY, PG.splitY + 5);
+  stripe(PG.x0, PG.splitY - 3.5, PG.x1, PG.splitY - 3.5, 0.15); stripe(PG.x0, PG.splitY, PG.x1, PG.splitY, 0.1, yellowPaint);
+  // dry skidpad R30, wet skidpad R25 on a wet square
+  ring(PG.dry, PG.dry.r, yellowPaint); ring(PG.dry, PG.dry.r - 4, paint, 0.08); ring(PG.dry, PG.dry.r + 4, paint, 0.08);
+  wetPlane(-200, -140, 25, 85);
+  ring(PG.wet, PG.wet.r, yellowPaint); ring(PG.wet, PG.wet.r - 4, paint, 0.08); ring(PG.wet, PG.wet.r + 4, paint, 0.08);
+}
+
 // Slalom cones: 10 cones, 18 m apart, at y = -45
 const SLALOM = { y: -45, x0: 40, gap: 18, n: 10 };
 const cones = [];
@@ -269,6 +320,12 @@ function sign(text, x, y, sub = '') {
 }
 document.fonts?.ready.then(() => {
   sign('STRAIGHT', -12, 9, '8 km · top speed');
+  sign('PROVING GROUND', -452, 9, 'bumps · skidpads · wet · split-µ');
+  sign('BUMP COURSE', -447, PG.bumpY + 5, '2 → 12 cm · washboard · crest · dip');
+  sign('SPLIT-µ', -447, PG.splitY + 6, 'left wheels wet · brake & launch');
+  sign('SKIDPAD R30', PG.dry.x - PG.dry.r - 6, PG.dry.y, 'dry');
+  sign('WET SKIDPAD', PG.wet.x - PG.wet.r - 6, PG.wet.y, 'R25 · wet');
+  sign('DRAG STRIP', -60, 9, 'straight ahead · 8 km');
   sign('SKIDPAD', 105, 72, 'R40 · constant radius');
   sign('SLALOM', 22, -40, '10 cones · 18 m');
   sign('BUMPS', 25, LANE_Y + 5, 'bumps · rumble · pothole · kerb');
@@ -520,7 +577,11 @@ scene.traverse((o) => { if (o.isMesh && o.material?.isMeshStandardMaterial) o.ma
 
 // ---------- Create car ----------
 const ZONES = [
-  { name: 'Start', x: 0, y: 0, yaw: 0 },
+  { name: 'Proving ground', x: -462, y: 0, yaw: 0 },
+  { name: 'Drag strip', x: 0, y: 0, yaw: 0 },
+  { name: 'Bump course', x: -452, y: PG.bumpY, yaw: 0 },
+  { name: 'Wet skidpad', x: PG.wet.x, y: PG.wet.y - PG.wet.r, yaw: 0 },
+  { name: 'Split-µ', x: -452, y: PG.splitY, yaw: 0 },
   { name: 'Skidpad', x: SKID.x, y: SKID.y - SKID.r, yaw: 0 },
   { name: 'Slalom', x: 10, y: SLALOM.y, yaw: 0 },
   { name: 'Bumps', x: 15, y: LANE_Y, yaw: 0 },
@@ -536,7 +597,7 @@ function createCar() {
   buildPlaceholder();
   buildTach();
   if (modelSource) loadModel(modelSource.buffer, modelSource.name, false);
-  M._ord_reset(0, 0, 0);
+  M._ord_reset(ZONES[0].x, ZONES[0].y, ZONES[0].yaw);
   resetTimers();
 }
 function placeAt(z) {
@@ -872,6 +933,11 @@ function updateHud(dt, inp) {
 // zone banner
 let currentZone = '';
 function zoneAt(x, y) {
+  if (x > PG.x0 - 5 && x < PG.x1 + 5 && Math.abs(y - PG.bumpY) < 5) return 'Bump course';
+  if (x > PG.x0 - 5 && x < PG.x1 + 5 && Math.abs(y - PG.splitY) < 5) return 'Split-µ';
+  if (Math.abs(Math.hypot(x - PG.dry.x, y - PG.dry.y) - PG.dry.r) < 7) return 'Skidpad · R30';
+  if (x > -200 && x < -140 && y > 25 && y < 85) return 'Wet skidpad · R25';
+  if (Math.abs(y) < 7 && x < -40 && x > -480) return 'Proving ground';
   if (x > 250 && x < 450 && y > 25 && y < 75) return 'Wet section';
   if (Math.abs(Math.hypot(x - SKID.x, y - SKID.y) - SKID.r) < 8) return 'Skidpad · R40';
   if (Math.abs(y - SLALOM.y) < 6 && x > 25 && x < 220) return 'Slalom';

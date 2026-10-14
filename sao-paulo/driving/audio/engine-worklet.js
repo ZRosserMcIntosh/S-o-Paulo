@@ -70,7 +70,8 @@ class EngineSynth {
   // Render n samples of stereo into L and R.
   render(L, R, n, p) {
     const sr = this.sr;
-    const kS = 1 - Math.exp(-1 / (0.004 * sr)); // parameter smoothing (short: no audible lag)
+    const kS = 1 - Math.exp(-1 / (0.004 * sr));
+    const kUp = 1 - Math.exp(-1 / (0.06 * sr)); // parameter smoothing (short: no audible lag)
     const inter = p.interior;
     // rpm fall rate (rpm/s), smoothed per block: drives overrun pops
     const drop = (this.prevRpm - p.rpm) * (sr / n);
@@ -78,7 +79,9 @@ class EngineSynth {
     this.prevRpm = p.rpm;
     for (let i = 0; i < n; ++i) {
       this.rpm += (p.rpm - this.rpm) * kS;
-      this.load += (p.load - this.load) * kS;
+      // Throttle swells in over ~60 ms (a stab of the pedal at low rpm no longer slams the
+      // speakers) but drops instantly on a lift so the overrun crackle starts right away.
+      this.load += (p.load - this.load) * (p.load > this.load ? kUp : kS);
       this.cutS += (p.cut - this.cutS) * kS * 4;
       const rpm = Math.max(300, this.rpm), load = this.load;
       const rpmN = Math.min(1.2, rpm / p.limiter);
@@ -100,7 +103,7 @@ class EngineSynth {
         const bk = this.banks[c & 1];
         const cutNow = Math.max(this.cutS, limiterCut);
         // Combustion strength: strong on load, weak pumping pulses when coasting.
-        let e = (0.14 + 0.86 * Math.pow(load, 0.8)) * this.cylAmp[c] * (0.98 + 0.04 * this.rand());
+        let e = (0.2 + 0.8 * Math.pow(load, 0.8)) * this.cylAmp[c] * (0.98 + 0.04 * this.rand());
         if (cutNow > 0.5) e = 0.1 * this.cylAmp[c];
         // Overrun: unburnt fuel popping in the exhaust when lifting at high rpm.
         if (load < 0.08 && rpm > 3200 && this.decel > 300 && this.rand() < 0.035 + 0.08 * Math.min(1, this.decel / 4000)) this.pop = 0.6 + 0.7 * this.rand();
@@ -115,7 +118,7 @@ class EngineSynth {
         let x = 0;
         x = this.pulseSum(bk.pulses);
         // pop: a broadband thump into the low resonances
-        if (this.pop > 0) { x += this.pop * (this.rand() * 2 - 1) * 0.9; }
+        if (this.pop > 0) { x += this.pop * (this.rand() * 2 - 1) * 2.0; }
         let y = 0;
         for (const r of bk.res) y += this.ring(r, x);
         // open-ended pipe: negative reflection
@@ -162,61 +165,74 @@ class EngineSynth {
   }
 }
 
-// Tyre noise. Two mechanisms:
-//  squeal - stick-slip of the tread at and just past the grip peak: a tonal whistle around
-//           0.7-1.2 kHz with a few inharmonic overtones, unsteady in pitch and amplitude;
-//  scrub  - a tyre sliding well past the peak (locked wheel, big drift, burnout): broadband
-//           rasp with tread-block chatter that speeds up with sliding speed.
+// Tyre noise, modelled on how real tyres sound rather than as a whistle:
+//  squeal - stick-slip of the tread near the grip peak excites a few lightly damped tread/carcass
+//           modes (~0.65-1.1 kHz plus overtones). They are driven by noise, so pitch and level
+//           wander naturally; the stick-slip itself shows up as irregular flutter. Two voices
+//           (left/right tyres) are detuned and panned so it isn't one pure tone.
+//  scrub  - a tyre sliding well past the peak (locked wheel, big drift, burnout): broadband rasp
+//           through the tread, with tread-block chatter that speeds up with sliding speed.
 // Parameters (k-rate): squeal 0..1, scrub 0..1, pitch 0..1 (how far past the peak), speed m/s.
 class TyreSynth {
   constructor(sr, seed = 11) {
     this.sr = sr;
     let s = seed >>> 0;
     this.rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-    this.ph = [0, 0, 0]; this.walk = 0; this.vib = 0; this.env = 1; this.envLp = 1;
-    this.sq = 0; this.sc = 0; this.pitch = 0; this.speed = 0; this.chat = 0;
-    const mk = (f, tau) => ({ f, tau, y1: 0, y2: 0 });
-    this.nres = [mk(900, 0.02), mk(1850, 0.012)];
-    this.scr = [mk(520, 0.0018), mk(1500, 0.0012), mk(3200, 0.0008)];
-    this.rum = 0;
-    [...this.nres, ...this.scr].forEach((r) => this.tune(r));
+    const mk = (f, tau, g) => ({ f, tau, g, y1: 0, y2: 0 });
+    this.voices = [0, 1].map((v) => ({
+      modes: [mk(800, 0.03, 1), mk(1600, 0.022, 0.45), mk(2400, 0.016, 0.2)],
+      detune: v ? 1.034 : 0.982, drift: 0, flut: 1, flutLp: 1, pan: v ? 0.75 : 0.25,
+    }));
+    this.scr = [mk(450, 0.0016, 1.1), mk(1200, 0.0011, 1), mk(2600, 0.0007, 0.6)];
+    this.sq = 0; this.sc = 0; this.chat = 0; this.chatAmp = 1; this.rum = 0; this.lpL = 0; this.lpR = 0;
+    this.scr.forEach((r) => this.tune(r));
   }
   tune(r) {
     const rr = Math.exp(-1 / (r.tau * this.sr));
     r.a1 = 2 * rr * Math.cos((2 * Math.PI * r.f) / this.sr); r.a2 = -rr * rr; r.norm = (1 - rr) * 2;
   }
-  ring(r, x) { const y = r.a1 * r.y1 + r.a2 * r.y2 + x * r.norm; r.y2 = r.y1; r.y1 = y; return y; }
+  ring(r, x) { const y = r.a1 * r.y1 + r.a2 * r.y2 + x * r.norm; r.y2 = r.y1; r.y1 = y; return y * r.g; }
   render(L, R, n, p) {
-    const sr = this.sr, k = 1 - Math.exp(-1 / (0.03 * sr));
-    // pitch of the whistle: rises a little with slip and speed
-    const f0 = 760 + 300 * Math.min(1, p.pitch) + 4 * Math.min(40, p.speed);
-    this.nres[0].f = f0; this.nres[1].f = f0 * 2.03; this.nres.forEach((r) => this.tune(r));
+    const sr = this.sr, k = 1 - Math.exp(-1 / (0.04 * sr));
+    const base = 650 + 380 * Math.min(1, p.pitch) + 3.5 * Math.min(40, p.speed);
+    for (const v of this.voices) {
+      // slow random drift of the mode frequencies (+-4 %), retuned once per block
+      v.drift = Math.max(-0.04, Math.min(0.04, v.drift + (this.rand() - 0.5) * 0.004));
+      const f = base * v.detune * (1 + v.drift);
+      v.modes[0].f = f; v.modes[1].f = f * 2.01; v.modes[2].f = f * 2.97;
+      v.modes.forEach((m) => this.tune(m));
+    }
+    const chatRate = Math.min(260, 14 + p.speed * 8);
     for (let i = 0; i < n; ++i) {
       this.sq += (p.squeal - this.sq) * k; this.sc += (p.scrub - this.sc) * k;
-      const w = this.rand() * 2 - 1;
-      // slow random wander (+-6 %) and stick-slip vibrato (~9 Hz)
-      this.walk = Math.max(-0.06, Math.min(0.06, this.walk + w * 0.00004));
-      this.vib += 9 / sr; if (this.vib > 1) this.vib -= 1;
-      const f = f0 * (1 + this.walk + 0.015 * Math.sin(2 * Math.PI * this.vib));
-      // amplitude flutter: low-passed noise
-      this.env += (0.6 + 0.8 * this.rand() - this.env) * 0.0015;
-      this.envLp += (this.env - this.envLp) * 0.01;
-      let tone = 0;
-      const harm = [[1, 1], [2.02, 0.42], [3.05, 0.2]];
-      for (let h = 0; h < 3; ++h) {
-        this.ph[h] += (f * harm[h][0]) / sr; if (this.ph[h] > 1) this.ph[h] -= 1;
-        tone += Math.sin(2 * Math.PI * this.ph[h]) * harm[h][1];
+      let l = 0, r = 0;
+      if (this.sq > 1e-4) {
+        for (const v of this.voices) {
+          // stick-slip flutter: low-passed, rectified noise -> irregular 10-40 Hz level changes
+          v.flut += (Math.abs(this.rand() * 2 - 1) * 2 - v.flut) * 0.004;
+          v.flutLp += (v.flut - v.flutLp) * 0.02;
+          const w = this.rand() * 2 - 1;
+          let y = 0;
+          for (const m of v.modes) y += this.ring(m, w);
+          y *= 1.2 * (0.35 + 0.9 * v.flutLp) * this.sq;
+          l += y * (1 - v.pan); r += y * v.pan;
+        }
       }
-      const breath = this.ring(this.nres[0], w) * 3 + this.ring(this.nres[1], w) * 1.5;
-      const squeal = (tone * 0.55 + breath * 0.45) * this.envLp * this.sq;
-      // scrub: rasp + tread chatter
-      this.chat += Math.min(220, 18 + p.speed * 9) / sr; if (this.chat > 1) this.chat -= 1;
-      const chatter = 0.55 + 0.45 * Math.sin(2 * Math.PI * this.chat);
-      let rasp = this.ring(this.scr[0], w) * 1.2 + this.ring(this.scr[1], w) + this.ring(this.scr[2], w) * 0.5;
-      this.rum += (w - this.rum) * 0.02;
-      const scrub = (rasp * chatter + this.rum * 1.5) * this.sc;
-      const y = Math.tanh((squeal * 0.5 + scrub * 0.7) * 1.2);
-      L[i] = y; R[i] = y;
+      if (this.sc > 1e-4) {
+        // tread-block chatter with jittered rate
+        this.chat += (chatRate * (0.85 + 0.3 * this.rand())) / sr;
+        if (this.chat > 1) { this.chat -= 1; this.chatAmp = 0.5 + 0.7 * this.rand(); }
+        const env = this.chatAmp * (0.5 + 0.5 * Math.sin(2 * Math.PI * this.chat));
+        const w = this.rand() * 2 - 1;
+        let rasp = 0;
+        for (const q of this.scr) rasp += this.ring(q, w);
+        this.rum += (w - this.rum) * 0.015;
+        const y = (rasp * (0.45 + 0.55 * env) * 2.2 + this.rum * 1.4) * this.sc * 0.15;
+        l += y; r += y;
+      }
+      // soften the very top so it never turns into hiss
+      this.lpL += (l - this.lpL) * 0.55; this.lpR += (r - this.lpR) * 0.55;
+      L[i] = Math.tanh(this.lpL * 1.1); R[i] = Math.tanh(this.lpR * 1.1);
     }
   }
 }
