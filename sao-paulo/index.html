@@ -424,7 +424,7 @@ const dm=$("demo"); dm.addEventListener("mouseenter",()=>dm.classList.add("on"))
 
 // ---------------- map
 const cv=$("map"), cx=cv.getContext("2d"), card=$("mapcard");
-const img=new Image(); img.src=N?"img/mosaic_world.jpg":"img/mosaic.jpg"; const sm=new Image(); sm.src=N?"img/mosaic_world_sm.jpg":"img/mosaic_sm.jpg";
+const img=new Image(); img.src=N?"img/mosaic_world.jpg?v="+N.snapshot:"img/mosaic.jpg"; const sm=new Image(); sm.src=N?"img/mosaic_world_sm.jpg?v="+N.snapshot:"img/mosaic_sm.jpg";
 let scale=1, ox=0, oy=0, mode="img", hover=null, dpr=Math.min(2,window.devicePixelRatio||1);
 const TL={}; D.tiles.forEach(t=>TL[t.t]=t); NT.forEach(t=>TL[t.t]=t);
 // street spatial grid (world metres, 60 m cells)
@@ -562,7 +562,7 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
 // ---------------- expansion
 (function(){const E=D.expansion||[];const sz=480/48;let h=`<rect width="480" height="480" fill="var(--bg)"/>`;
   const blk={North:[0,0],Northeast:[24,0],East:[24,24]};
-  h+=N?`<image href="img/mosaic_world_sm.jpg" x="0" y="0" width="${24*sz}" height="${48*sz}" preserveAspectRatio="none"/>`:`<image href="img/mosaic_sm.jpg" x="0" y="${24*sz}" width="${24*sz}" height="${24*sz}"/>`;
+  h+=N?`<image href="img/mosaic_world_sm.jpg?v=${N.snapshot}" x="0" y="0" width="${24*sz}" height="${48*sz}" preserveAspectRatio="none"/>`:`<image href="img/mosaic_sm.jpg" x="0" y="${24*sz}" width="${24*sz}" height="${24*sz}"/>`;
   for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles,live=b.status==="building"&&N;
     h+=live?`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 4" rx="4"/>`:`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="var(--plate)" opacity="${.18+.5*f}" rx="4"/>`;
     const tc=live?`fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3"`:`fill="var(--ink)"`;
@@ -577,7 +577,7 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
   new IntersectionObserver(es=>{for(const e of es){if(e.isIntersecting){load();if(!calm)v.play().catch(()=>{})}else if(!v.paused)v.pause()}},{threshold:.35}).observe(v);
   for(const b of document.querySelectorAll(".chapters button"))b.onclick=()=>{load();v.currentTime=parseFloat(b.dataset.t);v.play().catch(()=>{})}})();
 // ---------------- north block
-(function(){if(!N){$("north").hidden=true;return}const sz=20;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg" x="0" y="0" width="480" height="960" preserveAspectRatio="none"/>`;
+(function(){if(!N){$("north").hidden=true;return}const sz=20;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg?v=${N.snapshot}" x="0" y="0" width="480" height="960" preserveAspectRatio="none"/>`;
   for(const t of NT){const x=(t.i-wI0)*sz,y=(NJ1-t.j)*sz;const B=t.s==="built",f=t.img?"rgba(0,0,0,0)":B?"var(--good)":t.s==="building"?"var(--plate)":"var(--line)";const o=t.img?1:B?.75:t.s==="building"?.95:.9;
     h+=`<rect class="t" data-t="${t.t}" x="${x+.5}" y="${y+.5}" width="${sz-1}" height="${sz-1}" rx="2" fill="${f}" fill-opacity="${o}" stroke="${B?"rgba(31,157,99,.9)":"none"}" stroke-width="${B?1:0}"><title>${t.t} · ${t.d} · ${B?"built":t.s==="building"?"building":"not built yet"}</title></rect>`}
   $("ngrid").innerHTML=h;
