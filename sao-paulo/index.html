@@ -143,23 +143,50 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 .etable{width:100%;border-collapse:collapse;font-size:14px}.etable th,.etable td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}.etable th{font:600 11.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}.etable td{font-variant-numeric:tabular-nums}
 .tblwrap{overflow-x:auto}
 </style>
+<style>
+/* top bar, drive buttons, north block, drive section */
+.topbar{display:flex;justify-content:flex-end;padding-top:14px;margin-bottom:-6px}
+.topbar nav{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:flex-end;font:600 13.5px var(--body)}
+.topbar nav a:not(.drivebtn){color:var(--ink);text-decoration:none}.topbar nav a:not(.drivebtn):hover{color:var(--plate)}
+.drivebtn{display:inline-flex;align-items:center;gap:12px;background:var(--masp);color:#fff;text-decoration:none;border-radius:8px;padding:10px 18px 10px 12px;font:600 14px var(--body);box-shadow:0 12px 26px -16px rgba(210,42,31,.95)}
+.drivebtn:hover{filter:brightness(1.08)}.drivebtn:focus-visible,.ghost:focus-visible,.topbar a:focus-visible{outline:2px solid var(--plate);outline-offset:3px}
+.drivebtn .ico{width:30px;height:30px;flex:none;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:12px}
+.drivebtn b{display:block;font:800 20px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}.drivebtn small{display:block;font:500 12px/1.3 var(--body);opacity:.92;margin-top:3px}
+.drivebtn.sm{padding:6px 14px 6px 8px;gap:8px}.drivebtn.sm .ico{width:22px;height:22px;font-size:9px}.drivebtn.sm b{font-size:16px}
+.ctas{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin-top:24px}
+.ghost{font:600 14.5px var(--body);color:var(--ink);text-decoration:none;border-bottom:2px solid var(--plate);padding-bottom:1px}.ghost:hover{color:var(--plate)}
+.nblock{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:28px;align-items:start}@media (max-width:900px){.nblock{grid-template-columns:1fr}}
+#ngrid{display:block;width:100%;height:auto;border-radius:10px;background:#141a22}
+#ngrid .t{cursor:pointer}#ngrid .t:hover{stroke:#fff;stroke-width:2}
+.nkey{display:flex;flex-wrap:wrap;gap:6px 16px;font:500 13px var(--body);color:var(--mute);margin-top:10px}.nkey i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.prog{height:10px;border-radius:9px;background:var(--line);overflow:hidden;margin:14px 0 6px}.prog i{display:block;height:100%;background:var(--good);width:0;transition:width .8s}
+.tileimg .ph{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:#c8d2de;font:500 15px var(--body);background:repeating-linear-gradient(45deg,#141a22 0 12px,#18202b 12px 24px)}
+.drive{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:28px;align-items:start}@media (max-width:900px){.drive{grid-template-columns:1fr}}
+.drivecard{background:#0d1420;color:#e7ecf2;border-radius:12px;padding:clamp(18px,3vw,28px);display:grid;gap:20px}
+.drivecard ul{margin:0;padding:0 0 0 18px;display:grid;gap:8px;font-size:15px;color:#c8d2de}.drivecard ul b{color:#fff}
+.drivecard .spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.drivecard .spec div{border:1px solid #233044;border-radius:8px;padding:10px 12px}.drivecard .spec b{display:block;font:800 28px/1 var(--display);color:#fff;font-variant-numeric:tabular-nums}.drivecard .spec span{font-size:12px;color:#93a0b2}
+.keys2{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;font-size:14px;align-items:center}
+kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--bg);white-space:nowrap}
+</style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
 </head>
 <body>
 
-<header class="hero"><div class="wrap herogrid">
+<header class="hero"><div class="wrap topbar"><nav aria-label="Sections"><a href="#explore">Tile explorer</a><a href="#north">North block</a><a href="#metro">Metrô</a><a href="#qa">Quality</a><a class="drivebtn sm" href="driving/"><span class="ico" aria-hidden="true">▶</span><b>Drive the car</b></a></nav></div><div class="wrap herogrid">
   <div>
     <div class="eyebrow">An open-world game, one tile at a time</div>
     <div style="margin-top:18px"><div class="plate"><b>São Paulo<br>World</b><span>Centro · Paulista · Pinheiros · Ibirapuera &nbsp;1 : 1</span></div></div>
     <p class="lede">A <em>block-by-block</em> rebuild of São Paulo for a driving game: 144 km² of the real city from public survey data. Every building footprint, street tree, lamp post and named street, plus the Metrô running underneath at its real depth.</p>
+    <div class="ctas"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Drive the car</b><small>Vehicle physics test track, in your browser</small></span></a><a class="ghost" href="#north" id="northlink">North block: building now</a></div>
     <div class="facts" id="facts"></div>
     <div class="search"><input id="q" type="search" placeholder="Find a street or neighbourhood…  e.g. Oscar Freire, Moema" aria-label="Search streets and neighbourhoods" autocomplete="off"></div><div class="results" id="res"></div>
   </div>
   <div>
     <div class="mapcard" id="mapcard">
-      <canvas id="map" aria-label="Top-down mosaic of all 576 tiles; hover to read street names"></canvas>
+      <canvas id="map" aria-label="Top-down mosaic of the map and the north block as it is built; hover to read street names"></canvas>
       <div class="modes" role="group" aria-label="Map layer">
-        <button id="m_img" aria-pressed="true" data-m="img">Imagery</button><button id="m_qa" aria-pressed="false" data-m="qa">QA grades</button><button id="m_st" aria-pressed="false" data-m="st">Streets</button><button id="m_mt" aria-pressed="false" data-m="mt">Metrô</button>
+        <button id="m_img" aria-pressed="true" data-m="img">Imagery</button><button id="m_qa" aria-pressed="false" data-m="qa">QA grades</button><button id="m_st" aria-pressed="false" data-m="st">Streets</button><button id="m_mt" aria-pressed="false" data-m="mt">Metrô</button><button id="m_nb" aria-pressed="false" data-m="nb">North build</button>
       </div>
       <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
       <div class="legend" id="legend"></div>
@@ -174,10 +201,47 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 
 <section id="explore"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">Tile explorer</div><h2 id="ex_h">Pick any square</h2></div>
-    <p>Every square on the map is one 500 × 500 m tile with its own Blender file. Click a tile on the map above, or search a street, to see its top-down render, its QA grade and every named street in it.</p></div>
+    <p>Every square on the map is one 500 × 500 m tile with its own Blender file. Click a tile on the map above, or search a street, to see its top-down render, its QA grade and every named street in it. New tiles in the north block show up here as soon as they are built.</p></div>
   <div class="explorer">
-    <div class="tileimg"><img id="ex_img" src="tiles/T_p0_p0.jpg" alt="Top-down render of the selected tile"><div class="tag" id="ex_tag">T_p0_p0</div></div>
+    <div class="tileimg"><img id="ex_img" src="tiles/T_p0_p0.jpg" alt="Top-down render of the selected tile"><div class="ph" id="ex_ph" hidden></div><div class="tag" id="ex_tag">T_p0_p0</div></div>
     <div><div class="eyebrow" id="ex_area"></div><div class="kv" id="ex_kv"></div><div class="slist" id="ex_sl"></div></div>
+  </div>
+</div></section>
+
+<section id="north"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Building now</div><h2>The north block</h2></div>
+    <p>576 more tiles north of the map: Barra Funda and Casa Verde, up through Santana, Freguesia do Ó and Brasilândia to Tremembé and the edge of the Cantareira forest. This first pass builds each tile end to end (terrain, streets, buildings, trees, poles, house detail). The automatic repair and QA passes that took the original map to grade A come afterwards.</p></div>
+  <div class="nblock">
+    <div><svg id="ngrid" viewBox="0 0 480 480" role="img" aria-label="North block build progress, one square per tile, north up"></svg>
+      <div class="nkey"><span><i style="background:var(--good)"></i>Built (with its render once checked)</span><span><i style="background:var(--plate)"></i>Building at the snapshot</span><span><i style="background:var(--line)"></i>Not built yet</span></div></div>
+    <div class="panel"><div class="eyebrow" id="n_when"></div><div class="big" id="n_big" style="margin-top:10px">–<small>of 576 north tiles built</small></div><div class="prog"><i id="n_prog"></i></div>
+      <div class="kv" id="n_kv"></div>
+      <p style="margin-top:16px;color:var(--mute);font-size:14px" id="n_note"></p>
+      <p style="margin-top:12px"><a class="ghost" href="#explore" id="n_map">See it on the map ↑</a></p></div>
+  </div>
+</div></section>
+
+<section id="drive"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">Try the physics</div><h2>Drive the test car</h2></div>
+    <p>The game's vehicle physics, OpenRoad Dynamics, runs right here in your browser: the same C++ core the game will use, compiled to WebAssembly and stepping 360 times a second. Tyres, suspension, drivetrain and driver aids are all simulated, not animated.</p></div>
+  <div class="drive">
+    <div class="drivecard">
+      <div><div class="plate sm"><b>Rosser V8</b><span>9,000 rpm · 7-speed dual clutch</span></div></div>
+      <div class="spec"><div><b>3.8 s</b><span>0–100 km/h</span></div><div><b>~330</b><span>km/h flat out</span></div><div><b>1,480</b><span>kg · 42 / 58</span></div><div><b>360 Hz</b><span>physics step</span></div></div>
+      <ul><li><b>Proving ground</b>, where you start: a bump course, wet and dry skidpads, a split-µ strip and a slalom</li><li><b>Drag strip</b> for launches and top speed</li><li><b>Fun, Sport, Simulation</b>: the driver aids change, the grip stays the same</li><li>Engine sound synthesised live from rpm and load, skid marks, and telemetry you can download as CSV</li></ul>
+      <div><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Start driving</b><small>Desktop, gamepad or phone · turn the sound on</small></span></a></div>
+    </div>
+    <div class="panel"><div class="eyebrow" style="margin-bottom:12px">Controls</div><div class="keys2">
+      <span><kbd>W</kbd> <kbd>↑</kbd></span><span>Throttle</span>
+      <span><kbd>S</kbd> <kbd>↓</kbd></span><span>Brake, reverse when stopped</span>
+      <span><kbd>A</kbd> <kbd>D</kbd> <kbd>←</kbd> <kbd>→</kbd></span><span>Steer</span>
+      <span><kbd>Space</kbd></span><span>Handbrake</span>
+      <span><kbd>+</kbd> <kbd>−</kbd> · <kbd>E</kbd> <kbd>Q</kbd></span><span>Shift up / down (<kbd>G</kbd> back to automatic)</span>
+      <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span>Fun / Sport / Simulation</span>
+      <span><kbd>R</kbd> <kbd>C</kbd> <kbd>H</kbd> <kbd>M</kbd></span><span>Reset · camera · settings panel · sound</span>
+      <span>Gamepad</span><span>Left stick steer, RT gas, LT brake, A handbrake, RB / LB shift</span>
+      <span>Phone</span><span>On-screen pedals, steering and paddles</span>
+    </div></div>
   </div>
 </div></section>
 
@@ -275,7 +339,7 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 
 <section id="next"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">What comes next</div><h2>Four times the city</h2></div>
-    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side: one more block of 576 tiles to the north (Santana, Casa Verde, Tremembé), one to the east (Mooca, Tatuapé, Vila Prudente) and one to the north-east (Vila Maria, Penha, the edge of Guarulhos).</p></div>
+    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side. The north block (Santana, Casa Verde, Tremembé) is being built now; the east (Mooca, Tatuapé, Vila Prudente) and the north-east (Vila Maria, Penha, the edge of Guarulhos) follow.</p></div>
   <div class="expgrid">
     <div class="panel"><svg id="expmap" viewBox="0 0 480 480" role="img" aria-label="Current map and the three planned blocks"></svg></div>
     <div class="panel tblwrap"><table class="etable" id="etab"></table><p style="margin-top:14px;color:var(--mute);font-size:14px">Tiles inside the city use the same GeoSampa survey layers as today. Tiles outside it (São Caetano, Santo André, Guarulhos) will be built from OpenStreetMap alone, with a coarser terrain model.</p></div>
@@ -288,11 +352,6 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
   <div class="phys" id="phys"></div>
 </div></section>
 
-<section id="drive"><div class="wrap">
-  <div class="sechead"><div><div class="eyebrow">Try the physics</div><h2>Drive the test track</h2></div>
-    <p>The game's vehicle physics runs in your browser: the same C++ core, compiled to WebAssembly and stepping at 360 Hz. Take a car round a skidpad, a slalom, a bump lane with a kerb and a wet section, and switch between Fun, Sport and Simulation to feel the driver aids change while the grip stays the same.</p></div>
-  <p><a class="drivecta" href="driving/"><span class="plate sm"><b>Test track</b><span>Keyboard · gamepad · touch</span></span><span class="go">Start driving →</span></a></p>
-</div></section>
 
 <footer><div class="wrap row">
   <div><div class="plate sm"><b>São Paulo World</b><span>Solo game project · 2026</span></div></div>
@@ -304,9 +363,12 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 const $=id=>document.getElementById(id), fmt=n=>n.toLocaleString("en-US");
 let D; try{D=await (await fetch("site_data.json")).json()}catch(e){$("facts").textContent="Could not load the project data.";return}
 const [I0,I1,J0,J1]=D.grid, X0=I0*500-250, X1=I1*500+250, Y0=J0*500-250, Y1=J1*500+250, W=X1-X0, H=Y1-Y0;
+const N=D.north||null, NT=N?N.tiles:[], NJ0=7, NJ1=N?D.world[3]:J1; NT.forEach(t=>{t.ar=[t.d];t.sl=t.sl||[];t.north=1});
+const [wI0,wI1,wJ0,wJ1]=D.world||D.grid, MX0=wI0*500-250, MX1=wI1*500+250, MY0=wJ0*500-250, MY1=wJ1*500+250, MW=MX1-MX0, MH=MY1-MY0;
 const T=D.tot, ST=D.streets_tot, green=(T.grades.A||0);
 const stops=D.lines.reduce((a,l)=>a+l.st.length,0);
-$("facts").innerHTML=`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span><span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
+$("facts").innerHTML=`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span>${N?`<span><b>+${N.built}</b> north tiles built</span>`:""}<span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
+if(N)$("northlink").textContent=`North block: ${N.built} of 576 tiles built`;
 const stats=[[T.buildings,"buildings"],[T.trees,"street & park trees"],[T.poles,"utility poles"],[ST.streets,"named streets"],[ST.intersections,"crossings with name plates"],[stops,"rail station stops"]];
 $("stats").innerHTML=stats.map(([v,l])=>`<div class="stat"><b>${fmt(v)}</b><span>${l}</span></div>`).join("");
 $("sfacts").innerHTML=`<span><b>${fmt(ST.streets)}</b> streets</span><span><b>${Math.round(100*ST.with_codlog/ST.streets)}%</b> matched to the official register</span><span><b>${fmt(ST.intersections)}</b> crossings</span><span><b>${ST.areas}</b> neighbourhoods</span>`;
@@ -321,9 +383,9 @@ const dm=$("demo"); dm.addEventListener("mouseenter",()=>dm.classList.add("on"))
 
 // ---------------- map
 const cv=$("map"), cx=cv.getContext("2d"), card=$("mapcard");
-const img=new Image(); img.src="img/mosaic.jpg"; const sm=new Image(); sm.src="img/mosaic_sm.jpg";
+const img=new Image(); img.src=N?"img/mosaic_world.jpg":"img/mosaic.jpg"; const sm=new Image(); sm.src=N?"img/mosaic_world_sm.jpg":"img/mosaic_sm.jpg";
 let scale=1, ox=0, oy=0, mode="img", hover=null, dpr=Math.min(2,window.devicePixelRatio||1);
-const TL={}; D.tiles.forEach(t=>TL[t.t]=t);
+const TL={}; D.tiles.forEach(t=>TL[t.t]=t); NT.forEach(t=>TL[t.t]=t);
 // street spatial grid (world metres, 60 m cells)
 const G=60, grid=new Map();
 D.streets.forEach((s,k)=>{const P=s[3];for(let n=1;n<P.length;n++){const a=P[n-1],b=P[n];const x0=Math.floor(Math.min(a[0],b[0])/G),x1=Math.floor(Math.max(a[0],b[0])/G),y0=Math.floor(Math.min(a[1],b[1])/G),y1=Math.floor(Math.max(a[1],b[1])/G);
@@ -334,14 +396,24 @@ function nearest(wx,wy,maxd){let best=null,bd=maxd;const gx=Math.floor(wx/G),gy=
       const d=Math.hypot(a[0]+dx*t-wx,a[1]+dy*t-wy)+s[2]*1.5;if(d<bd){bd=d;best=s}}}
   return best}
 function size(){const r=card.getBoundingClientRect();cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);draw()}
-const base=()=>cv.width/W; // px per metre at scale 1
-const w2s=(x,y)=>[((x-X0)*base())*scale+ox,((Y1-y)*base())*scale+oy];
-const s2w=(px,py)=>[X0+((px-ox)/scale)/base(),Y1-((py-oy)/scale)/base()];
-function clamp(){const m=cv.width;scale=Math.max(1,Math.min(14,scale));ox=Math.min(0,Math.max(m-m*scale,ox));oy=Math.min(0,Math.max(m-m*scale,oy))}
+const base=()=>Math.min(cv.width/MW,cv.height/MH); // px per metre at scale 1 (whole map fits)
+const w2s=(x,y)=>[((x-MX0)*base())*scale+ox,((MY1-y)*base())*scale+oy];
+const s2w=(px,py)=>[MX0+((px-ox)/scale)/base(),MY1-((py-oy)/scale)/base()];
+const ZK=MH/MW; // zoom factor relative to the old square core map
+function clamp(){scale=Math.max(1,Math.min(14*ZK,scale));const cw=MW*base()*scale,ch=MH*base()*scale;
+  ox=cw<=cv.width?(cv.width-cw)/2:Math.min(0,Math.max(cv.width-cw,ox));oy=ch<=cv.height?(cv.height-ch)/2:Math.min(0,Math.max(cv.height-ch,oy))}
 function draw(){const c=cx,Wc=cv.width;c.fillStyle="#141a22";c.fillRect(0,0,Wc,Wc);
-  const im=(scale*Wc>sm.naturalWidth*1.1&&img.complete&&img.naturalWidth)?img:(sm.complete&&sm.naturalWidth?sm:null);
-  if(im){c.imageSmoothingQuality="high";c.drawImage(im,ox,oy,Wc*scale,Wc*scale)}
+  const dw=MW*base()*scale,dh=MH*base()*scale;
+  const im=(dw>sm.naturalWidth*1.1&&img.complete&&img.naturalWidth)?img:(sm.complete&&sm.naturalWidth?sm:null);
+  if(im){c.imageSmoothingQuality="high";c.drawImage(im,ox,oy,dw,dh)}
   const tp=500*base()*scale;
+  if(N){for(const t of NT){if(t.img&&mode!=="nb")continue;const [x,y]=w2s(t.i*500-250,t.j*500+250);
+      if(mode==="nb"){c.fillStyle=t.s==="built"?"rgba(31,157,99,.42)":t.s==="building"?"rgba(37,99,201,.85)":"rgba(255,255,255,.07)";c.fillRect(x+1,y+1,tp-2,tp-2)}
+      else if(t.s==="built"){c.fillStyle="rgba(31,157,99,.28)";c.fillRect(x+1,y+1,tp-2,tp-2)}
+      else{c.strokeStyle="rgba(255,255,255,.08)";c.lineWidth=1;c.strokeRect(x+.5,y+.5,tp-1,tp-1)}}
+    const [bx,by]=w2s(wI0*500-250,NJ1*500+250),[ex,ey]=w2s(wI1*500+250,NJ0*500-250);
+    c.setLineDash([6*dpr,5*dpr]);c.strokeStyle="rgba(255,211,107,.85)";c.lineWidth=1.5*dpr;c.strokeRect(bx,by,ex-bx,ey-by);c.setLineDash([]);
+    if(scale<5*ZK){c.font=`800 ${14*dpr}px "Big Shoulders Display",sans-serif`;c.textBaseline="bottom";c.textAlign="right";c.lineWidth=3*dpr;c.strokeStyle="rgba(5,10,20,.9)";const lb=`NORTH BLOCK · ${N.built} OF 576 BUILT`,lx=Math.min(ex,cv.width)-8*dpr,ly=Math.min(ey,cv.height)-8*dpr;c.strokeText(lb,lx,ly);c.fillStyle="#ffd36b";c.fillText(lb,lx,ly);c.textAlign="left"}}
   if(mode==="qa"){c.globalAlpha=.55;for(const t of D.tiles){const [x,y]=w2s(t.i*500-250,t.j*500+250);c.fillStyle=GC[t.g];c.fillRect(x+1,y+1,tp-2,tp-2)}c.globalAlpha=1}
   if(mode==="st"){c.lineCap="round";const wd=[3.2,2.4,1.6,.9];for(const lv of [3,2,1,0])for(const s of D.streets){if(s[2]!==lv)continue;c.strokeStyle=lv<2?"#ffd36b":lv===2?"rgba(255,255,255,.9)":"rgba(170,205,255,.55)";c.lineWidth=wd[lv]*dpr*Math.min(2.2,.7+scale*.25);c.beginPath();s[3].forEach((p,n)=>{const [x,y]=w2s(p[0],p[1]);n?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}}
   if(mode==="mt"){c.fillStyle="rgba(10,15,25,.45)";c.fillRect(0,0,Wc,Wc);c.lineCap="round";c.lineJoin="round";for(const l of D.lines){c.strokeStyle=l.c;c.lineWidth=4*dpr;c.beginPath();l.xy.forEach((p,n)=>{const [x,y]=w2s(p[0],p[1]);n?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();
@@ -349,11 +421,12 @@ function draw(){const c=cx,Wc=cv.width;c.fillStyle="#141a22";c.fillRect(0,0,Wc,W
     if(scale>1.7){c.font=`700 ${11*dpr}px "Public Sans",sans-serif`;c.textBaseline="middle";const seen=new Set();for(const l of D.lines)for(const s of l.st){if(seen.has(s.n))continue;seen.add(s.n);const [x,y]=w2s(s.x,s.y);if(x<0||y<0||x>Wc||y>Wc)continue;c.lineWidth=3*dpr;c.strokeStyle="rgba(5,10,20,.85)";c.strokeText(s.n,x+7*dpr,y);c.fillStyle="#fff";c.fillText(s.n,x+7*dpr,y)}}}
   if(selTile){const [x,y]=w2s(selTile.i*500-250,selTile.j*500+250);c.strokeStyle="#ffd36b";c.lineWidth=3*dpr;c.strokeRect(x,y,tp,tp)}
   if(hover&&hover.t){const [x,y]=w2s(hover.t.i*500-250,hover.t.j*500+250);c.strokeStyle="#fff";c.lineWidth=2*dpr;c.strokeRect(x,y,tp,tp)}
-  const LG={img:"",qa:["A","B","C","D","F"].map(g=>`<span><i style="background:${GC[g]}"></i>${g}</span>`).join(""),st:`<span><i style="background:#ffd36b"></i>avenues</span><span><i style="background:#fff"></i>collectors</span><span><i style="background:#aacdff"></i>local</span>`,mt:D.lines.map(l=>`<span><i style="background:${l.c}"></i>${l.ref}</span>`).join("")};
+  const LG={img:"",qa:["A","B","C","D","F"].map(g=>`<span><i style="background:${GC[g]}"></i>${g}</span>`).join(""),st:`<span><i style="background:#ffd36b"></i>avenues</span><span><i style="background:#fff"></i>collectors</span><span><i style="background:#aacdff"></i>local</span>`,mt:D.lines.map(l=>`<span><i style="background:${l.c}"></i>${l.ref}</span>`).join(""),nb:`<span><i style="background:#1f9d63"></i>built</span><span><i style="background:#2563c9"></i>building</span><span><i style="background:rgba(255,255,255,.3)"></i>not yet</span>`};
   $("legend").innerHTML=LG[mode]}
 img.onload=draw; sm.onload=draw;
 function setMode(m){mode=m;for(const b of document.querySelectorAll(".modes button"))b.setAttribute("aria-pressed",String(b.dataset.m===m));draw()}
-for(const b of document.querySelectorAll(".modes button"))b.onclick=()=>setMode(b.dataset.m);
+function showNorth(){scale=2;const [mx,my]=w2s(-750,9250);ox+=cv.width/2-mx;oy+=cv.height/2-my;clamp();setMode("nb")}
+for(const b of document.querySelectorAll(".modes button"))b.onclick=()=>b.dataset.m==="nb"?showNorth():setMode(b.dataset.m);
 function zoomAt(f,px,py){const [wx,wy]=s2w(px,py);scale*=f;clamp();const [nx,ny]=w2s(wx,wy);ox+=px-nx;oy+=py-ny;clamp();draw()}
 $("zin").onclick=()=>zoomAt(1.6,cv.width/2,cv.height/2);$("zout").onclick=()=>zoomAt(1/1.6,cv.width/2,cv.height/2);
 cv.addEventListener("wheel",e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(e.deltaY<0?1.25:.8,(e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr)},{passive:false});
@@ -367,16 +440,23 @@ cv.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect(),px=(e.c
   if(s){$("bn").textContent=s[0];$("ba").textContent=s[1]||"";$("banner").style.opacity=1}else{$("banner").style.opacity=t?0.0:0}
   draw()});
 cv.addEventListener("pointerleave",()=>{hover=null;$("banner").style.opacity=0;draw()});
-function pick(e){const r=cv.getBoundingClientRect(),[wx,wy]=s2w((e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr);const i=Math.round(wx/500),j=Math.round(wy/500);
-  const t=D.tiles.find(q=>q.i===i&&q.j===j);if(t)showTile(t)}
+const tname=(i,j)=>`T_${i<0?"m"+(-i):"p"+i}_${j<0?"m"+(-j):"p"+j}`;
+function pick(e){const r=cv.getBoundingClientRect(),[wx,wy]=s2w((e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr);const t=TL[tname(Math.round(wx/500),Math.round(wy/500))];if(t)showTile(t)}
 let selTile=null;
-function showTile(t){selTile=t;$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t;$("ex_tag").textContent=t.t+" · grade "+t.g;
+function showTile(t){selTile=t;
+  if(t.north){const km=`${(t.i*0.5).toFixed(1)} km E, ${(t.j*0.5).toFixed(1)} km N of MASP`;$("ex_h").textContent=t.d;$("ex_ph").hidden=!!t.img;$("ex_img").hidden=!t.img;
+    const B=t.s==="built";
+    if(t.img){$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t}else $("ex_ph").textContent=B?"Built. Its top-down render comes with the next site update":t.s==="building"?"Being built at the time of the snapshot":"Not built yet: queued in the north block build";
+    $("ex_tag").textContent=t.t+" · north block"+(B?", first pass":"");$("ex_area").textContent=t.d+"  ·  "+km+(B?"  ·  repair passes still to come":"");
+    $("ex_kv").innerHTML=B?(t.img?[[fmt(t.b),"buildings"],[fmt(t.tr),"trees"],[fmt(t.po),"poles"]]:[]).concat([[t.st,"named streets"]]).map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join(""):"";
+    $("ex_sl").innerHTML=B?(t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>"):"";draw();return}
+  $("ex_ph").hidden=true;$("ex_img").hidden=false;$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t;$("ex_tag").textContent=t.t+" · grade "+t.g;
   $("ex_h").textContent=(t.ar[0]||t.t);$("ex_area").textContent=(t.ar.join(" · ")||"–")+"  ·  "+(t.i*0.5).toFixed(1)+" km E, "+(t.j*0.5).toFixed(1)+" km N of MASP";
   $("ex_kv").innerHTML=[[t.g,"QA grade"],[fmt(t.b),"buildings"],[fmt(t.tr),"trees"],[fmt(t.po),"poles"],[t.st,"named streets"],[t.pl||"–","name plates"]].map(([v,l])=>`<div><b style="${l==="QA grade"?"color:"+GC[t.g]:""}">${v}</b><span>${l}</span></div>`).join("");
   $("ex_sl").innerHTML=t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>";draw()}
-function focusTile(t){scale=4;const [mx,my]=w2s(t.i*500,t.j*500);ox+=cv.width/2-mx;oy+=cv.height/2-my;clamp();draw();showTile(t)}
+function focusTile(t){scale=4*ZK;const [mx,my]=w2s(t.i*500,t.j*500);ox+=cv.width/2-mx;oy+=cv.height/2-my;clamp();draw();showTile(t)}
 // search: streets and neighbourhoods -> tiles
-const IDX=new Map();D.tiles.forEach(t=>{t.sl.forEach(n=>{const k=n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"street",tiles:[]});IDX.get(k).tiles.push(t)});t.ar.forEach(n=>{const k="@"+n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"area",tiles:[]});IDX.get(k).tiles.push(t)})});
+const IDX=new Map();D.tiles.concat(NT.filter(t=>t.s==="built")).forEach(t=>{t.sl.forEach(n=>{const k=n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"street",tiles:[]});IDX.get(k).tiles.push(t)});t.ar.forEach(n=>{const k="@"+n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"area",tiles:[]});IDX.get(k).tiles.push(t)})});
 const norm=x=>x.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 $("q").addEventListener("input",()=>{const q=norm($("q").value.trim());if(q.length<2){$("res").innerHTML="";return}
   const hits=[...IDX.values()].filter(v=>norm(v.n).includes(q)).sort((a,b)=>(a.kind===b.kind?0:a.kind==="area"?-1:1)||b.tiles.length-a.tiles.length).slice(0,8);
@@ -384,7 +464,7 @@ $("q").addEventListener("input",()=>{const q=norm($("q").value.trim());if(q.leng
   [...$("res").querySelectorAll("button")].forEach(b=>b.onclick=()=>{const h=hits[b.dataset.k];focusTile(h.tiles[Math.floor(h.tiles.length/2)]);$("bn").textContent=h.n;$("ba").textContent=h.tiles[0].ar[0]||"";$("banner").style.opacity=1})});
 new ResizeObserver(size).observe(card); size();
 // initial view: centred on Paulista / MASP
-scale=1.6; const [mx,my]=w2s(0,-300); ox=cv.width/2-mx; oy=cv.height/2-my; clamp(); draw();
+scale=1.6*ZK; const [mx,my]=w2s(0,-300); ox=cv.width/2-mx; oy=cv.height/2-my; clamp(); draw();
 
 // ---------------- metro plan + profile
 const UNDER=new Set(["1","2","3","4","5","6"]); let sel=D.lines.find(l=>l.ref==="4")||D.lines[0];
@@ -420,11 +500,25 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
 // ---------------- expansion
 (function(){const E=D.expansion||[];const sz=480/48;let h=`<rect width="480" height="480" fill="var(--bg)"/>`;
   const blk={North:[0,0],Northeast:[24,0],East:[24,24]};
-  h+=`<image href="img/mosaic_sm.jpg" x="0" y="${24*sz}" width="${24*sz}" height="${24*sz}"/>`;
-  for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles;h+=`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="var(--plate)" opacity="${.18+.5*f}" rx="4"/><text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" fill="var(--ink)" font-family="var(--display)">${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" fill="var(--ink)">${b.inside} of ${b.tiles} tiles inside the city</text>`}
+  h+=N?`<image href="img/mosaic_world_sm.jpg" x="0" y="0" width="${24*sz}" height="${48*sz}" preserveAspectRatio="none"/>`:`<image href="img/mosaic_sm.jpg" x="0" y="${24*sz}" width="${24*sz}" height="${24*sz}"/>`;
+  for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles,live=b.status==="building"&&N;
+    h+=live?`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 4" rx="4"/>`:`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="var(--plate)" opacity="${.18+.5*f}" rx="4"/>`;
+    const tc=live?`fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3"`:`fill="var(--ink)"`;
+    h+=`<text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" ${tc} font-family="var(--display)">${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" ${tc}>${live?`building now · ${b.built} of ${b.tiles} built`:`${b.inside} of ${b.tiles} tiles inside the city`}</text>`}
   h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3">TODAY · 576 TILES</text>`;
   $("expmap").innerHTML=h;
   $("etab").innerHTML=`<tr><th>Block</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
+// ---------------- north block
+(function(){if(!N){$("north").hidden=true;return}const sz=20;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg" x="0" y="0" width="480" height="960" preserveAspectRatio="none"/>`;
+  for(const t of NT){const x=(t.i-wI0)*sz,y=(NJ1-t.j)*sz;const B=t.s==="built",f=t.img?"rgba(0,0,0,0)":B?"var(--good)":t.s==="building"?"var(--plate)":"var(--line)";const o=t.img?1:B?.75:t.s==="building"?.95:.9;
+    h+=`<rect class="t" data-t="${t.t}" x="${x+.5}" y="${y+.5}" width="${sz-1}" height="${sz-1}" rx="2" fill="${f}" fill-opacity="${o}" stroke="${B?"rgba(31,157,99,.9)":"none"}" stroke-width="${B?1:0}"><title>${t.t} · ${t.d} · ${B?"built":t.s==="building"?"building":"not built yet"}</title></rect>`}
+  $("ngrid").innerHTML=h;
+  for(const r of $("ngrid").querySelectorAll(".t"))r.onclick=()=>{const t=TL[r.dataset.t];focusTile(t);document.getElementById("explore").scrollIntoView({behavior:"smooth"})};
+  const when=new Date(N.snapshot*1000).toLocaleString("en-GB",{timeZone:"America/Sao_Paulo",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  $("n_when").textContent="Snapshot · "+when+" (São Paulo time)";$("n_big").firstChild.textContent=N.built;$("n_prog").style.width=(100*N.built/576)+"%";
+  $("n_kv").innerHTML=[[fmt(N.buildings),`buildings in the ${N.with_img} tiles checked so far`],[fmt(N.trees),"trees in those tiles"],[fmt(N.poles),"poles in those tiles"],[fmt(N.streets),`named streets in all ${N.built} built tiles`]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("");
+  $("n_note").textContent=`Built column by column outward from MASP's meridian, ${N.rate?`about ${Math.round(N.rate)} tiles an hour `:""}on one laptop. A few forest tiles along the top edge wait for a fix in the street builder. Click a built square to open it in the tile explorer.`;
+  $("n_map").onclick=e=>{e.preventDefault();document.getElementById("mapcard").scrollIntoView({behavior:"smooth",block:"center"});showNorth()};})();
 })();
 </script>
 
