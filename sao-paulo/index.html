@@ -180,6 +180,9 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 .tilepanel .sxhint{margin-top:8px}
 .engl{margin:10px 0 0;padding-left:18px;display:grid;gap:7px;font-size:14.5px;color:var(--mute)}.engl b{color:var(--ink)}
 .ghbtn{display:inline-flex;align-items:center;gap:9px;background:var(--ink);color:var(--bg);text-decoration:none;border-radius:8px;padding:9px 14px;font:700 14px var(--body)}.ghbtn:hover{opacity:.9}.ghbtn:focus-visible{outline:2px solid var(--plate);outline-offset:3px}
+.filmbox{border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;box-shadow:0 30px 60px -40px rgba(0,0,0,.7)}.filmbox video{width:100%;height:100%;display:block;object-fit:cover}
+.chapters{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.chapters button{font:600 13px var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:6px 13px;cursor:pointer}
+.chapters button small{font:500 11.5px var(--mono);color:var(--mute);margin-left:6px}.chapters button:hover{border-color:var(--plate)}.chapters button:focus-visible{outline:2px solid var(--plate);outline-offset:2px}
 .tileimg .sx{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:pan-y}.tileimg .tag{pointer-events:none}
 .stip{position:absolute;left:0;top:0;pointer-events:none;background:rgba(8,14,24,.9);color:#fff;border-radius:8px;padding:8px 12px 9px;max-width:min(80%,380px);opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .stip b{display:block;font:900 italic 21px/1.05 var(--display);letter-spacing:.01em}.stip .a{font:700 12px/1.3 var(--body);color:#ffd36b;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
@@ -191,7 +194,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 </head>
 <body>
 
-<header class="hero"><div class="wrap topbar"><nav aria-label="Sections"><a href="#explore">Map &amp; tiles</a><a href="#north">North block</a><a href="#metro">Metrô</a><a href="#qa">Quality</a><a href="physics/">Physics engine</a><a class="drivebtn sm" href="driving/"><span class="ico" aria-hidden="true">▶</span><b>Drive the car</b></a></nav></div>
+<header class="hero"><div class="wrap topbar"><nav aria-label="Sections"><a href="#film">Film</a><a href="#explore">Map &amp; tiles</a><a href="#north">North block</a><a href="#metro">Metrô</a><a href="#qa">Quality</a><a href="physics/">Physics engine</a><a class="drivebtn sm" href="driving/"><span class="ico" aria-hidden="true">▶</span><b>Drive the car</b></a></nav></div>
 <div class="wrap herotop">
   <div>
     <div class="eyebrow">An open-world game, one tile at a time</div>
@@ -200,7 +203,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
   <div>
     <p class="lede joke">Have you ever taken a Vyvanse, but before it hit you forgot you took it, so you took a second Vyvanse? Then next thing you know you have a 1:1 render of São Paulo? <em>Yeah, me neither.</em></p>
     <p class="sublede">A block-by-block rebuild of São Paulo for an open-world driving game: 144 km² of the real city from public survey data, with every building footprint, street tree, lamp post and named street, plus the Metrô running underneath at its real depth.</p>
-    <div class="ctas"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Drive the car</b><small>Vehicle physics test track, in your browser</small></span></a><a class="ghost" href="#north" id="northlink">North block: building now</a></div>
+    <div class="ctas"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Drive the car</b><small>Vehicle physics test track, in your browser</small></span></a><a class="ghost" href="#film">▶ Watch the 30-second film</a><a class="ghost" href="#north" id="northlink">North block: building now</a></div>
     <div class="facts" id="facts"></div>
   </div>
 </div>
@@ -228,6 +231,15 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
     <div class="slist" id="ex_sl"></div>
   </aside>
 </div></header>
+
+<section id="film"><div class="wrap">
+  <div class="sechead"><div><div class="eyebrow">The film · 30 seconds, rendered in Blender</div><h2>Fly over the city</h2></div>
+    <p>From street level under MASP on Avenida Paulista, up over Jardins, across Faria Lima at 300 m, down to the Pinheiros river and around the Ponte Estaiada at golden hour. Every frame is the actual game map, rendered on one laptop.</p></div>
+  <div class="filmbox"><video id="filmv" playsinline muted loop controls preload="none" poster="video/poster.jpg" data-hd="video/flythrough_1080.mp4" data-sd="video/flythrough_720.mp4" aria-label="30-second flythrough of São Paulo World"></video></div>
+  <div class="chapters" role="group" aria-label="Jump to a place in the film">
+    <button data-t="0">MASP <small>0:00</small></button><button data-t="11.2">Jardins <small>0:11</small></button><button data-t="16">Faria Lima <small>0:16</small></button><button data-t="20.2">Rio Pinheiros <small>0:20</small></button><button data-t="25">Ponte Estaiada <small>0:25</small></button>
+  </div>
+</div></section>
 
 <div class="wrap"><div class="stats" id="stats"></div></div>
 
@@ -558,6 +570,11 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
   h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3">TODAY · 576 TILES</text>`;
   $("expmap").innerHTML=h;
   $("etab").innerHTML=`<tr><th>Block</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
+// ---------------- film: picks the 1080p or 720p file by screen width, plays muted while on screen
+(function(){const v=$("filmv");if(!v)return;const pick=()=>window.innerWidth>=900?v.dataset.hd:v.dataset.sd;let loaded=false;
+  const load=()=>{if(!loaded){v.src=pick();loaded=true}};const calm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  new IntersectionObserver(es=>{for(const e of es){if(e.isIntersecting){load();if(!calm)v.play().catch(()=>{})}else if(!v.paused)v.pause()}},{threshold:.35}).observe(v);
+  for(const b of document.querySelectorAll(".chapters button"))b.onclick=()=>{load();v.currentTime=parseFloat(b.dataset.t);v.play().catch(()=>{})}})();
 // ---------------- north block
 (function(){if(!N){$("north").hidden=true;return}const sz=20;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg" x="0" y="0" width="480" height="960" preserveAspectRatio="none"/>`;
   for(const t of NT){const x=(t.i-wI0)*sz,y=(NJ1-t.j)*sz;const B=t.s==="built",f=t.img?"rgba(0,0,0,0)":B?"var(--good)":t.s==="building"?"var(--plate)":"var(--line)";const o=t.img?1:B?.75:t.s==="building"?.95:.9;
