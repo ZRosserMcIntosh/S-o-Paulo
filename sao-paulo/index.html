@@ -235,7 +235,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 <section id="film"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">The film · 30 seconds, rendered in Blender</div><h2>Fly over the city</h2></div>
     <p>From street level under MASP on Avenida Paulista, up over Jardins, across Faria Lima at 300 m, down to the Pinheiros river and around the Ponte Estaiada at golden hour. Every frame is the actual game map, rendered on one laptop.</p></div>
-  <div class="filmbox"><video id="filmv" playsinline muted loop controls preload="none" poster="video/poster.jpg" data-hd="video/flythrough_1080.mp4" data-sd="video/flythrough_720.mp4" aria-label="30-second flythrough of São Paulo World"></video></div>
+  <div class="filmbox"><video id="filmv" playsinline muted loop controls preload="none" poster="video/poster.jpg" data-hd="video/flythrough_1080.mp4" data-sd="video/flythrough_720.mp4" data-webm="video/flythrough_720.webm" aria-label="30-second flythrough of São Paulo World"></video></div>
   <div class="chapters" role="group" aria-label="Jump to a place in the film">
     <button data-t="0">MASP <small>0:00</small></button><button data-t="11.2">Jardins <small>0:11</small></button><button data-t="16">Faria Lima <small>0:16</small></button><button data-t="20.2">Rio Pinheiros <small>0:20</small></button><button data-t="25">Ponte Estaiada <small>0:25</small></button>
   </div>
@@ -570,9 +570,10 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
   h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3">TODAY · 576 TILES</text>`;
   $("expmap").innerHTML=h;
   $("etab").innerHTML=`<tr><th>Block</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
-// ---------------- film: picks the 1080p or 720p file by screen width, plays muted while on screen
-(function(){const v=$("filmv");if(!v)return;const pick=()=>window.innerWidth>=900?v.dataset.hd:v.dataset.sd;let loaded=false;
-  const load=()=>{if(!loaded){v.src=pick();loaded=true}};const calm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ---------------- film: H.264 MP4 (1080p or 720p by screen width) with a VP9 WebM fallback; plays muted while on screen
+(function(){const v=$("filmv");if(!v)return;let loaded=false;
+  const load=()=>{if(loaded)return;loaded=true;const add=(src,type)=>{const e=document.createElement("source");e.src=src;e.type=type;v.appendChild(e)};
+    add(window.innerWidth>=900?v.dataset.hd:v.dataset.sd,"video/mp4");add(v.dataset.webm,"video/webm");v.load()};const calm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   new IntersectionObserver(es=>{for(const e of es){if(e.isIntersecting){load();if(!calm)v.play().catch(()=>{})}else if(!v.paused)v.pause()}},{threshold:.35}).observe(v);
   for(const b of document.querySelectorAll(".chapters button"))b.onclick=()=>{load();v.currentTime=parseFloat(b.dataset.t);v.play().catch(()=>{})}})();
 // ---------------- north block
