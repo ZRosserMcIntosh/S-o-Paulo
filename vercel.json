@@ -15,6 +15,11 @@
       "source": "/sao-paulo/driving",
       "destination": "/sao-paulo/driving/",
       "permanent": true
+    },
+    {
+      "source": "/sao-paulo/physics",
+      "destination": "/sao-paulo/physics/",
+      "permanent": true
     }
   ],
   "headers": [
