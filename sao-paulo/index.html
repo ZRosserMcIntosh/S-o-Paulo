@@ -246,7 +246,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 
 
 <section id="north"><div class="wrap">
-  <div class="sechead"><div><div class="eyebrow">Building now</div><h2>The north block</h2></div>
+  <div class="sechead"><div><div class="eyebrow" id="n_eyebrow">Building now</div><h2>The north block</h2></div>
     <p>576 more tiles north of the map: Barra Funda and Casa Verde, up through Santana, Freguesia do Ó and Brasilândia to Tremembé and the edge of the Cantareira forest. This first pass builds each tile end to end (terrain, streets, buildings, trees, poles, house detail). The automatic repair and QA passes that took the original map to grade A come afterwards.</p></div>
   <div class="nblock">
     <div><svg id="ngrid" viewBox="0 0 480 480" role="img" aria-label="North block build progress, one square per tile, north up"></svg>
@@ -380,7 +380,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 
 <section id="next"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">What comes next</div><h2>Four times the city</h2></div>
-    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side. The north block (Santana, Casa Verde, Tremembé) is being built now; the east (Mooca, Tatuapé, Vila Prudente) and the north-east (Vila Maria, Penha, the edge of Guarulhos) follow.</p></div>
+    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side. The north block (Santana, Casa Verde, Tremembé) has its first pass built; the east (Mooca, Tatuapé, Vila Prudente) and the north-east (Vila Maria, Penha, the edge of Guarulhos) follow.</p></div>
   <div class="expgrid">
     <div class="panel"><svg id="expmap" viewBox="0 0 480 480" role="img" aria-label="Current map and the three planned blocks"></svg></div>
     <div class="panel tblwrap"><table class="etable" id="etab"></table><p style="margin-top:14px;color:var(--mute);font-size:14px">Tiles inside the city use the same GeoSampa survey layers as today. Tiles outside it (São Caetano, Santo André, Guarulhos) will be built from OpenStreetMap alone, with a coarser terrain model.</p></div>
@@ -566,7 +566,7 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
   for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles,live=b.status==="building"&&N;
     h+=live?`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 4" rx="4"/>`:`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="var(--plate)" opacity="${.18+.5*f}" rx="4"/>`;
     const tc=live?`fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3"`:`fill="var(--ink)"`;
-    h+=`<text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" ${tc} font-family="var(--display)">${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" ${tc}>${live?`building now · ${b.built} of ${b.tiles} built`:`${b.inside} of ${b.tiles} tiles inside the city`}</text>`}
+    h+=`<text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" ${tc} font-family="var(--display)">${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" ${tc}>${live?`${N.building||N.queued?"building now":"first pass"} · ${b.built} of ${b.tiles} built`:`${b.inside} of ${b.tiles} tiles inside the city`}</text>`}
   h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3">TODAY · 576 TILES</text>`;
   $("expmap").innerHTML=h;
   $("etab").innerHTML=`<tr><th>Block</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
@@ -583,9 +583,10 @@ $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g
   $("ngrid").innerHTML=h;
   for(const r of $("ngrid").querySelectorAll(".t"))r.onclick=()=>{const t=TL[r.dataset.t];focusTile(t);document.getElementById("explore").scrollIntoView({behavior:"smooth"})};
   const when=new Date(N.snapshot*1000).toLocaleString("en-GB",{timeZone:"America/Sao_Paulo",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-  $("n_when").textContent="Snapshot · "+when+" (São Paulo time)";$("n_big").firstChild.textContent=N.built;$("n_prog").style.width=(100*N.built/576)+"%";
+  $("n_when").textContent="Snapshot · "+when+" (São Paulo time)";const done=!N.building&&!N.queued;
+  if(done){$("n_eyebrow").textContent="First pass built";$("northlink").textContent=`North block: ${N.built} of 576 tiles built`}$("n_big").firstChild.textContent=N.built;$("n_prog").style.width=(100*N.built/576)+"%";
   $("n_kv").innerHTML=[[fmt(N.buildings),`buildings in the ${N.with_img} tiles checked so far`],[fmt(N.trees),"trees in those tiles"],[fmt(N.poles),"poles in those tiles"],[fmt(N.streets),`named streets in all ${N.built} built tiles`]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("");
-  $("n_note").textContent=`Built column by column outward from MASP's meridian, ${N.rate?`about ${Math.round(N.rate)} tiles an hour `:""}on one laptop. A few forest tiles along the top edge wait for a fix in the street builder. Click a built square to open it in the tile explorer.`;
+  $("n_note").textContent=`Built column by column outward from MASP's meridian, ${N.rate?`about ${Math.round(N.rate)} tiles an hour `:""}on one laptop. ${N.failed?`${N.failed} tiles, mostly forest along the top edge, wait for a fix in the street builder. `:""}Click a built square to open it in the tile explorer.`;
   $("n_map").onclick=e=>{e.preventDefault();document.getElementById("mapcard").scrollIntoView({behavior:"smooth",block:"center"});showNorth()};})();
 })();
 </script>
