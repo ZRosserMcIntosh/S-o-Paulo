@@ -167,6 +167,11 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 .drivecard .spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
 .drivecard .spec div{border:1px solid #233044;border-radius:8px;padding:10px 12px}.drivecard .spec b{display:block;font:800 28px/1 var(--display);color:#fff;font-variant-numeric:tabular-nums}.drivecard .spec span{font-size:12px;color:#93a0b2}
 .keys2{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;font-size:14px;align-items:center}
+.tileimg .sx{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:pan-y}.tileimg .tag{pointer-events:none}
+.stip{position:absolute;left:0;top:0;pointer-events:none;background:rgba(8,14,24,.9);color:#fff;border-radius:8px;padding:8px 12px 9px;max-width:min(80%,380px);opacity:0;transition:opacity .12s;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.stip b{display:block;font:900 italic 21px/1.05 var(--display);letter-spacing:.01em}.stip .a{font:700 12px/1.3 var(--body);color:#ffd36b;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.stip .m{font:500 12px/1.4 var(--mono);color:#c8d2de;margin-top:5px}
+.sxhint{font:500 12px var(--mono);color:var(--mute);margin-top:10px}.slist div[data-k]{cursor:default}.slist div[data-k]:hover{color:var(--plate)}
 kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--bg);white-space:nowrap}
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
@@ -203,7 +208,8 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
   <div class="sechead"><div><div class="eyebrow">Tile explorer</div><h2 id="ex_h">Pick any square</h2></div>
     <p>Every square on the map is one 500 × 500 m tile with its own Blender file. Click a tile on the map above, or search a street, to see its top-down render, its QA grade and every named street in it. New tiles in the north block show up here as soon as they are built.</p></div>
   <div class="explorer">
-    <div class="tileimg"><img id="ex_img" src="tiles/T_p0_p0.jpg" alt="Top-down render of the selected tile"><div class="ph" id="ex_ph" hidden></div><div class="tag" id="ex_tag">T_p0_p0</div></div>
+    <div><div class="tileimg"><img id="ex_img" src="tiles/T_p0_p0.jpg" alt="Top-down render of the selected tile"><div class="ph" id="ex_ph" hidden></div><canvas class="sx" id="ex_sx" aria-label="Hover a street to see its name and CEP"></canvas><div class="tag" id="ex_tag">T_p0_p0</div><div class="stip" id="ex_stip" role="status"></div></div>
+      <div class="sxhint">Hover a street on the render to light it up. CEPs come from Correios via ViaCEP and are still being filled in.</div></div>
     <div><div class="eyebrow" id="ex_area"></div><div class="kv" id="ex_kv"></div><div class="slist" id="ex_sl"></div></div>
   </div>
 </div></section>
@@ -449,11 +455,32 @@ function showTile(t){selTile=t;
     if(t.img){$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t}else $("ex_ph").textContent=B?"Built. Its top-down render comes with the next site update":t.s==="building"?"Being built at the time of the snapshot":"Not built yet: queued in the north block build";
     $("ex_tag").textContent=t.t+" · north block"+(B?", first pass":"");$("ex_area").textContent=t.d+"  ·  "+km+(B?"  ·  repair passes still to come":"");
     $("ex_kv").innerHTML=B?(t.img?[[fmt(t.b),"buildings"],[fmt(t.tr),"trees"],[fmt(t.po),"poles"]]:[]).concat([[t.st,"named streets"]]).map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join(""):"";
-    $("ex_sl").innerHTML=B?(t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>"):"";draw();return}
+    $("ex_sl").innerHTML=B?(t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>"):"";loadStreets(t.img?t:null);draw();return}
   $("ex_ph").hidden=true;$("ex_img").hidden=false;$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t;$("ex_tag").textContent=t.t+" · grade "+t.g;
   $("ex_h").textContent=(t.ar[0]||t.t);$("ex_area").textContent=(t.ar.join(" · ")||"–")+"  ·  "+(t.i*0.5).toFixed(1)+" km E, "+(t.j*0.5).toFixed(1)+" km N of MASP";
   $("ex_kv").innerHTML=[[t.g,"QA grade"],[fmt(t.b),"buildings"],[fmt(t.tr),"trees"],[fmt(t.po),"poles"],[t.st,"named streets"],[t.pl||"–","name plates"]].map(([v,l])=>`<div><b style="${l==="QA grade"?"color:"+GC[t.g]:""}">${v}</b><span>${l}</span></div>`).join("");
-  $("ex_sl").innerHTML=t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>";draw()}
+  $("ex_sl").innerHTML=t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>";loadStreets(t);draw()}
+// ---------------- street overlay on the tile render: hover -> name, bairro, numbers, CEP; the street lights up
+const SX=$("ex_sx"),sxc=SX.getContext("2d"),STIP=$("ex_stip");let SD=null,SDt=null,hov=null;
+async function loadStreets(t){SD=null;hov=null;SDt=t&&t.t;STIP.style.opacity=0;drawSX();if(!t)return;
+  try{const r=await fetch("streets/"+t.t+".json");if(!r.ok)return;const d=await r.json();if(SDt!==t.t)return;SD=d;linkList()}catch(e){}}
+function sizeSX(){const r=SX.getBoundingClientRect(),k=Math.min(2,window.devicePixelRatio||1);SX.width=Math.max(1,Math.round(r.width*k));SX.height=Math.max(1,Math.round(r.height*k));drawSX()}
+function drawSX(){const c=sxc,w=SX.width,h=SX.height;c.clearRect(0,0,w,h);if(!SD||hov==null)return;const s=SD.s[hov];c.save();c.lineCap="round";c.lineJoin="round";
+  c.fillStyle="rgba(5,10,20,.28)";c.fillRect(0,0,w,h);
+  for(const [lw,col] of [[16,"rgba(255,211,107,.28)"],[8,"rgba(255,211,107,.95)"],[2.6,"#ffffff"]]){c.lineWidth=lw*w/760;c.strokeStyle=col;
+    for(const L of s.L){c.beginPath();for(let k=0;k<L.length;k+=2){const x=L[k]/1000*w,y=L[k+1]/1000*h;k?c.lineTo(x,y):c.moveTo(x,y)}c.stroke()}}
+  c.restore()}
+function nearestStreet(u,v,maxd){let best=-1,bi=-1,bd=maxd;SD.s.forEach((s,si)=>s.L.forEach((L,li)=>{for(let k=2;k<L.length;k+=2){const ax=L[k-2],ay=L[k-1],dx=L[k]-ax,dy=L[k+1]-ay,l2=dx*dx+dy*dy||1;
+    let q=((u-ax)*dx+(v-ay)*dy)/l2;q=Math.max(0,Math.min(1,q));const d=Math.hypot(ax+dx*q-u,ay+dy*q-v)+s.k*0.6;if(d<bd){bd=d;best=si;bi=li}}}));return [best,bi]}
+function showStip(si,li,px,py){const s=SD.s[si],n=s.N&&s.N[li],cp=s.C&&s.C[li];STIP.innerHTML="";const b=document.createElement("b");b.textContent=s.n;const a=document.createElement("div");a.className="a";a.textContent=s.b||"";
+  const m=document.createElement("div");m.className="m";m.textContent=[n?`Nº ${n[0]}–${n[1]}`:"",cp?(cp==="várias"?"several CEPs along this street":"CEP "+cp):"CEP not indexed yet"].filter(Boolean).join("  ·  ");STIP.append(b,a,m);
+  const box=SX.getBoundingClientRect();STIP.style.left=Math.max(8,Math.min(px+16,box.width-STIP.offsetWidth-8))+"px";STIP.style.top=(py-STIP.offsetHeight-14<8?py+18:py-STIP.offsetHeight-14)+"px";STIP.style.opacity=1}
+function sxMove(e){if(!SD)return;const r=SX.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;const [si,li]=nearestStreet(px/r.width*1000,py/r.height*1000,e.pointerType==="touch"?40:24);
+  if((si>=0?si:null)!==hov){hov=si>=0?si:null;drawSX()}if(si>=0)showStip(si,li,px,py);else STIP.style.opacity=0}
+SX.addEventListener("pointermove",sxMove);SX.addEventListener("pointerdown",sxMove);SX.addEventListener("pointerleave",()=>{hov=null;drawSX();STIP.style.opacity=0});
+new ResizeObserver(sizeSX).observe(SX);
+function linkList(){const idx=new Map(SD.s.map((s,k)=>[s.n.toLowerCase(),k]));for(const d of $("ex_sl").children){const k=idx.get(d.textContent.toLowerCase());if(k==null)continue;d.dataset.k=k;
+  d.onmouseenter=()=>{hov=k;drawSX();const s=SD.s[k],L=s.L[0],mid=Math.floor(L.length/4)*2,r=SX.getBoundingClientRect();showStip(k,0,L[mid]/1000*r.width,L[mid+1]/1000*r.height)};d.onmouseleave=()=>{hov=null;drawSX();STIP.style.opacity=0}}}
 function focusTile(t){scale=4*ZK;const [mx,my]=w2s(t.i*500,t.j*500);ox+=cv.width/2-mx;oy+=cv.height/2-my;clamp();draw();showTile(t)}
 // search: streets and neighbourhoods -> tiles
 const IDX=new Map();D.tiles.concat(NT.filter(t=>t.s==="built")).forEach(t=>{t.sl.forEach(n=>{const k=n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"street",tiles:[]});IDX.get(k).tiles.push(t)});t.ar.forEach(n=>{const k="@"+n.toLowerCase();if(!IDX.has(k))IDX.set(k,{n,kind:"area",tiles:[]});IDX.get(k).tiles.push(t)})});
