@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import createAvdModule from './avd.mjs';
 import { buildAircraft } from './model.js';
 import { K, markingsFrom, drawPanel } from './panel.js';
+import { buildCabin } from './cabin.js';
 import { FlightAudio } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -187,24 +188,12 @@ scene.add(acGroup);
 const qM = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);  // ENU → three
 const qBody = new THREE.Quaternion();
 const eye = new THREE.Object3D();  // pilot's eye, left seat (FLU from the datum), looking forward
-eye.position.set(-1.6, 0.28, 0.86);
+eye.position.set(-1.38, 0.27, 0.84);
 eye.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(-1, 0, 0)));
 aircraft.root.add(eye);
-// Cabin seen from the left seat only: headliner, glareshield and windshield posts.
-const cabin = new THREE.Group();
-{
-  const dark = new THREE.MeshLambertMaterial({ color: '#2b2e33', side: THREE.DoubleSide });
-  const liner = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.04, 0.02), dark); liner.position.set(-1.68, 0, 1.02); cabin.add(liner);
-  const glare = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.02, 0.05), dark); glare.position.set(-0.62, 0, 0.6); cabin.add(glare);
-  const post = (a, b) => {
-    const d = new THREE.Vector3().subVectors(b, a), m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, d.length(), 8), dark);
-    m.position.copy(a).addScaledVector(d, 0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); cabin.add(m);
-  };
-  for (const y of [0.5, -0.5]) post(new THREE.Vector3(-0.38, y, 0.66), new THREE.Vector3(-0.95, y * 1.04, 1.05));
-  for (const y of [0.53, -0.53]) post(new THREE.Vector3(-0.95, y, 1.05), new THREE.Vector3(-0.95, y, 0.4));
-}
-cabin.visible = false;
-aircraft.root.add(cabin);
+// The cabin, seen only from the left seat.
+const cabin = buildCabin({ mobile: MOBILE, maxAniso: renderer.capabilities.getMaxAnisotropy() });
+aircraft.root.add(cabin.root);
 const bodyPoint = (x, y, z) => acGroup.localToWorld(new THREE.Vector3(x, y, z));
 
 // ---------- State ----------
@@ -399,7 +388,7 @@ function toggleSound() {
 $('bSound').addEventListener('click', (e) => { toggleSound(); e.currentTarget.blur(); });
 
 const CAMS = ['Chase', 'Cockpit', 'Orbit', 'Tower'];
-function cycleCam() { ui.cam = (ui.cam + 1) % CAMS.length; store.set('cam', ui.cam); snapCamera = true; look.yaw = look.pitch = 0; $('bCam').textContent = CAMS[ui.cam]; toast(`Camera: ${CAMS[ui.cam]}`, 1.5); }
+function cycleCam() { ui.cam = (ui.cam + 1) % CAMS.length; store.set('cam', ui.cam); snapCamera = true; look.yaw = look.pitch = 0; $('bCam').textContent = CAMS[ui.cam]; toast(`Camera: ${CAMS[ui.cam]}`, 1.5); requestAnimationFrame(sizePanel); }
 $('bCam').textContent = CAMS[ui.cam];
 $('bCam').addEventListener('click', (e) => { cycleCam(); e.currentTarget.blur(); });
 function toggleInstr() { ui.instr = !ui.instr; store.set('instr', ui.instr); $('instr').hidden = !ui.instr; $('bInstr').setAttribute('aria-pressed', String(ui.instr)); sizePanel(); }
@@ -476,13 +465,17 @@ const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
 const TOWER = enu(rwMid[0] + rwDir[0] * -120 + rwRight[0] * 140, rwMid[1] + rwDir[1] * -120 + rwRight[1] * 140, ELEV + 26);
 function updateCamera(dt) {
   const target = bodyPoint(-1.4, 0, 0.4);
-  aircraft.glass.visible = ui.cam !== 1; cabin.visible = ui.cam === 1;
+  const inside = ui.cam === 1;
+  cabin.root.visible = inside;
+  aircraft.glass.opacity = inside ? 0.06 : 0.88;
+  $('instr').hidden = !ui.instr || inside;
+  $('hud').style.display = inside ? 'none' : '';
   if (!look.held && ui.cam !== 2) { look.yaw *= Math.exp(-dt * 1.5); look.pitch *= Math.exp(-dt * 1.5); }
   camera.near = ui.cam === 1 ? 0.08 : 0.5;
   if (ui.cam === 1) {
     eye.getWorldPosition(camera.position); eye.getWorldQuaternion(camera.quaternion);
-    camera.rotateY(look.yaw); camera.rotateX(-look.pitch * 0.8);
-    camera.fov = innerWidth < innerHeight ? 80 : 68;
+    camera.rotateY(look.yaw); camera.rotateX(-look.pitch * 0.8 - 0.17);
+    camera.fov = innerWidth < innerHeight ? 82 : 70;
   } else if (ui.cam === 3) {
     camera.position.copy(TOWER); camera.lookAt(target);
     camera.fov = clamp(Math.atan2(22, TOWER.distanceTo(target)) * 2 / DEG, 2, 60);
@@ -554,7 +547,17 @@ restart(0);
 $('loading').hidden = true;
 $('loading').style.display = 'none';
 const clock = new THREE.Clock();
-let panelT = 0;
+let panelT = 0, cabinT = 1, swT = 1;
+const sw = { bat: 1, alt: 1, avionics: 1, beacon: 0, land: 0, taxi: 0, nav: 0, strobe: 0, pitot: 0, mags: 3, flaps: 0, fuelSel: 1 };
+function readSwitches() {
+  const p = Object.fromEntries(A.cockpit().map((x) => [x.id, x.position]));
+  Object.assign(sw, {
+    bat: p['electrical.battery'], alt: p['electrical.alternator'], avionics: p['electrical.avionics'],
+    beacon: p['electrical.load.beacon'], land: p['electrical.load.landing_light'], taxi: p['electrical.load.taxi_light'],
+    nav: p['electrical.load.nav_lights'], strobe: p['electrical.load.strobes'], pitot: p['electrical.load.pitot_heat'],
+    mags: p['engine1.ignition'], flaps: p['flaps.lever'], fuelSel: p['fuel.selector'],
+  });
+}
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.1);
@@ -574,15 +577,18 @@ function frame() {
   // Airplane pose: datum position and body FLU → ENU attitude.
   acGroup.position.copy(enu(s[0], s[1], s[2]));
   acGroup.quaternion.copy(qM).multiply(qBody.set(s[4], s[5], s[6], s[3]));
-  aircraft.update({ flapDeg: s[26], aileron: s[45], elevator: s[46], rudder: s[47], rpm: ui.paused ? 0 : s[19] }, ui.paused ? 0 : dt);
+  aircraft.update({ flapDeg: s[26], aileron: s[45], elevator: s[46], rudder: s[47], rpm: ui.paused ? 0 : s[19], disc: ui.cam === 1 ? 0.15 : 1 }, ui.paused ? 0 : dt);
   acGroup.updateMatrixWorld(true);
   updateCamera(dt);
   renderer.render(scene, camera);
   drawLabels();
   $('warn').classList.toggle('on', c[K.stall] > 0.5 && !ui.crashed);
   hud();
-  panelT += dt;
-  if (ui.instr && panelT > 1 / 30) {
+  panelT += dt; cabinT += dt; swT += dt;
+  if (swT > 0.2) { swT = 0; readSwitches(); }
+  cabin.update({ elev: s[46], ail: s[45], rud: s[47], trim: s[27], thr: input.throttle, mix: input.mixture, flapLever: sw.flaps, fuelSel: sw.fuelSel });
+  if (ui.cam === 1 && cabinT > 1 / 30) { cabinT = 0; cabin.redraw(c, M, sw, s, c[K.compass]); }
+  if (ui.instr && ui.cam !== 1 && panelT > 1 / 30) {
     panelT = 0;
     const r = panelCv.getBoundingClientRect();
     drawPanel(pctx, r.width, r.height, c, M, panelLayout);

@@ -225,7 +225,7 @@ export function buildAircraft(def) {
     const fast = st.rpm > 600;
     blades.visible = !fast || st.rpm < 900;
     blades.quaternion.copy(q.setFromAxisAngle(new THREE.Vector3(1, 0, 0), fast ? propAngle * 0.02 + Math.random() * 6.28 : propAngle));
-    disc.material.opacity = Math.min(0.35, Math.max(0, (st.rpm - 500) / 1500) * 0.35);
+    disc.material.opacity = Math.min(0.35, Math.max(0, (st.rpm - 500) / 1500) * 0.35) * (st.disc ?? 1);
   }
   return { root, update, glass: glassMat };
 }
