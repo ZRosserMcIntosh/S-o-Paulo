@@ -17,6 +17,11 @@
       "permanent": true
     },
     {
+      "source": "/sao-paulo/flying",
+      "destination": "/sao-paulo/flying/",
+      "permanent": true
+    },
+    {
       "source": "/sao-paulo/physics",
       "destination": "/sao-paulo/physics/",
       "permanent": true
@@ -38,6 +43,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=604800"
+        }
+      ]
+    },
+    {
+      "source": "/sao-paulo/flying/(.*\\.wasm)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
         }
       ]
     },
