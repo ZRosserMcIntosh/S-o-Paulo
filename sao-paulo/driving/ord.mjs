@@ -33,6 +33,11 @@ export default async function createOrdModule() {
   for (const [k, f] of Object.entries(ex)) if (k.startsWith('ord_')) M['_' + k] = f;
   let heap = new Float64Array(memory.buffer);
   Object.defineProperty(M, 'HEAPF64', { get: () => (heap.buffer === memory.buffer ? heap : (heap = new Float64Array(memory.buffer))) });
+  const view = (C) => { let v = new C(memory.buffer); return () => (v.buffer === memory.buffer ? v : (v = new C(memory.buffer))); };
+  const h16 = view(Int16Array), hu8 = view(Uint8Array), hf32 = view(Float32Array);
+  Object.defineProperty(M, 'HEAP16', { get: h16 });
+  Object.defineProperty(M, 'HEAPU8', { get: hu8 });
+  Object.defineProperty(M, 'HEAPF32', { get: hf32 });
   // Emscripten returns byte addresses for pointers; keep that convention.
   return M;
 }

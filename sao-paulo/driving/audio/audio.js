@@ -107,6 +107,26 @@ export class CarAudio {
     this.volume = v;
     if (this.master && this.enabled) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
   }
+  // A collision: a low body thump plus a short crunch, scaled by the impact speed (0..1).
+  impact(k) {
+    if (!this.ready || !this.ctx || this.ctx.state !== 'running' || !(k > 0)) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    if (t - (this.lastImpact || 0) < 0.12) return;
+    this.lastImpact = t;
+    const len = Math.floor(ctx.sampleRate * 0.5), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let b = 0;
+    for (let i = 0; i < len; ++i) {
+      const x = i / ctx.sampleRate;
+      b = b * 0.97 + (Math.random() * 2 - 1) * 0.03;                  // brown-ish noise: body
+      const thump = Math.sin(2 * Math.PI * (55 + 30 * Math.exp(-x * 30)) * x) * Math.exp(-x * 14);
+      const crunch = (Math.random() * 2 - 1) * Math.exp(-x * 28) * 0.35;
+      d[i] = (thump * 0.9 + b * 4 * Math.exp(-x * 8) + crunch * k);
+    }
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900 + 2500 * k;
+    const g = ctx.createGain(); g.gain.value = 0.25 + 0.75 * k;
+    src.connect(lp).connect(g).connect(this.master); src.start();
+  }
   // st: { dt, rpm, load, limiter, gear, speed (m/s), tyre: { squeal, scrub, pitch }, interior (bool) }
   update(st) {
     if (!this.ready || !this.ctx || this.ctx.state !== 'running') return;

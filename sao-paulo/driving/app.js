@@ -7,6 +7,7 @@ import { GLTFLoader } from './vendor/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from './vendor/libs/meshopt_decoder.module.js';
 import createOrdModule from './ord.mjs';
 import { CarAudio } from './audio/audio.js';
+import { loadCity, streetNamer } from './city.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -31,6 +32,15 @@ const G = 9.81;
 
 // ISO 8855 (x forward, y left, z up) -> three.js (y up): (x, z, -y)
 const v3 = (x, y, z) => new THREE.Vector3(x, z, -y);
+
+// ---------- World ----------
+// 'city' (default): the 500 x 500 m São Paulo World tile around MASP. 'track': the test track.
+const WORLD = (() => {
+  const q = new URLSearchParams(location.search).get('world');
+  if (q === 'city' || q === 'track') { store.set('world', q); return q; }
+  return store.get('world', 'city') === 'track' ? 'track' : 'city';
+})();
+function switchWorld(w) { store.set('world', w); const u = new URL(location.href); u.searchParams.set('world', w); location.href = u.href; }
 
 // ---------- Settings ----------
 const settings = {
@@ -115,6 +125,8 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+// ---------- Test track (world=track) ----------
+const TRACK = WORLD === 'track' ? scene : new THREE.Group();
 // ---------- Proving ground ----------
 function asphaltTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -140,10 +152,10 @@ const asphalt = asphaltTexture();
   ground.rotation.x = -Math.PI / 2;
   ground.position.copy(v3(200, -20, 0));
   ground.receiveShadow = true;
-  scene.add(ground);
+  TRACK.add(ground);
   // grass beyond the pad
   const grass = new THREE.Mesh(new THREE.PlaneGeometry(20000, 6000), new THREE.MeshStandardMaterial({ color: '#56703f', roughness: 1 }));
-  grass.rotation.x = -Math.PI / 2; grass.position.set(4000, -0.6, 0); scene.add(grass);
+  grass.rotation.x = -Math.PI / 2; grass.position.set(4000, -0.6, 0); TRACK.add(grass);
 }
 // Road paint and overlays sit on the pad via polygon offset (robust on 16-bit depth buffers).
 const decal = { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 };
@@ -156,7 +168,7 @@ function stripe(x0, y0, x1, y1, w, mat = paint) {
   m.rotation.z = Math.atan2(y1 - y0, x1 - x0);
   m.position.copy(v3((x0 + x1) / 2, (y0 + y1) / 2, 0.003));
   m.receiveShadow = true;
-  scene.add(m);
+  TRACK.add(m);
 }
 // Straight: 8 km, long enough for every car to reach its top speed and still brake
 // (Sports RWD: ~300 km/h by 4 km; Hypercar: ~474 km/h by 5.2 km). Edge lines, dashed centre,
@@ -166,7 +178,7 @@ const STRAIGHT_END = 8000;
   const tex = asphalt.clone(); tex.needsUpdate = true; tex.repeat.set((STRAIGHT_END - 880) / 5, 36 / 5);
   const road = new THREE.Mesh(new THREE.PlaneGeometry(STRAIGHT_END - 880, 36), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92 }));
   road.rotation.x = -Math.PI / 2; road.position.copy(v3((880 + STRAIGHT_END) / 2 + 20, 0, -0.002)); road.receiveShadow = true;
-  scene.add(road);
+  TRACK.add(road);
   // long thin stripes are split so each piece stays well-conditioned on the GPU
   for (let x = -40; x < STRAIGHT_END; x += 500) { const x1 = Math.min(STRAIGHT_END, x + 500); stripe(x, 6, x1, 6, 0.15); stripe(x, -6, x1, -6, 0.15); }
   const dashes = [];
@@ -175,28 +187,28 @@ const STRAIGHT_END = 8000;
   const inst = new THREE.InstancedMesh(dg, paint, dashes.length);
   const mtx = new THREE.Matrix4();
   dashes.forEach((x, i) => { mtx.makeTranslation(x + 3, 0.003, 0); inst.setMatrixAt(i, mtx); });
-  inst.receiveShadow = true; scene.add(inst);
+  inst.receiveShadow = true; TRACK.add(inst);
   stripe(0, -6, 0, 6, 0.5);
   stripe(STRAIGHT_END, -6, STRAIGHT_END, 6, 0.5, yellowPaint);
   // end-of-road barrier
   const wall = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.1, 30), new THREE.MeshStandardMaterial({ color: '#d43a2c', roughness: 0.6 }));
-  wall.position.copy(v3(STRAIGHT_END + 60, 0, 0.55)); wall.castShadow = true; scene.add(wall);
+  wall.position.copy(v3(STRAIGHT_END + 60, 0, 0.55)); wall.castShadow = true; TRACK.add(wall);
 }
 // Skidpad R40, centre (120, 110)
 const SKID = { x: 120, y: 110, r: 40 };
 {
   const ring = new THREE.Mesh(new THREE.RingGeometry(SKID.r - 0.15, SKID.r + 0.15, 256), yellowPaint);
-  ring.rotation.x = -Math.PI / 2; ring.position.copy(v3(SKID.x, SKID.y, 0.002)); scene.add(ring);
+  ring.rotation.x = -Math.PI / 2; ring.position.copy(v3(SKID.x, SKID.y, 0.002)); TRACK.add(ring);
   for (const r of [36, 44]) {
     const g = new THREE.Mesh(new THREE.RingGeometry(r - 0.08, r + 0.08, 256), paint);
-    g.rotation.x = -Math.PI / 2; g.position.copy(v3(SKID.x, SKID.y, 0.002)); scene.add(g);
+    g.rotation.x = -Math.PI / 2; g.position.copy(v3(SKID.x, SKID.y, 0.002)); TRACK.add(g);
   }
 }
 // Wet section (matches the patch in ord_web.cpp: x 250..450, y 25..75)
 {
   const wet = new THREE.Mesh(new THREE.PlaneGeometry(200, 50),
     new THREE.MeshStandardMaterial({ color: '#1f2a36', roughness: 0.08, metalness: 0.35, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-  wet.rotation.x = -Math.PI / 2; wet.position.copy(v3(350, 50, 0.001)); wet.receiveShadow = true; scene.add(wet);
+  wet.rotation.x = -Math.PI / 2; wet.position.copy(v3(350, 50, 0.001)); wet.receiveShadow = true; TRACK.add(wet);
   stripe(250, 25, 450, 25, 0.2, yellowPaint); stripe(250, 75, 450, 75, 0.2, yellowPaint);
 }
 // Bump lane: height field sampled from the physics' own ground function
@@ -233,7 +245,7 @@ const LANE_Y = M._ord_bump_lane_y();
   const lane = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
   lane.receiveShadow = true;
   lane.position.y = 0.001;
-  scene.add(lane);
+  TRACK.add(lane);
   stripe(0, LANE_Y - 3, 40, LANE_Y - 3, 0.15); stripe(0, LANE_Y + 3, 40, LANE_Y + 3, 0.15);
 }
 // ---------- Proving ground (default start), west of the drag strip ----------
@@ -244,11 +256,11 @@ const PG = { bumpY: M._ord_proving_bump_y(), splitY: M._ord_proving_split_y(), x
 const wetMat = new THREE.MeshStandardMaterial({ color: '#1f2a36', roughness: 0.08, metalness: 0.35, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
 function wetPlane(x0, x1, y0, y1) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), wetMat);
-  m.rotation.x = -Math.PI / 2; m.position.copy(v3((x0 + x1) / 2, (y0 + y1) / 2, 0.001)); m.receiveShadow = true; scene.add(m);
+  m.rotation.x = -Math.PI / 2; m.position.copy(v3((x0 + x1) / 2, (y0 + y1) / 2, 0.001)); m.receiveShadow = true; TRACK.add(m);
 }
 function ring(c, r, mat, w = 0.15) {
   const g = new THREE.Mesh(new THREE.RingGeometry(r - w, r + w, 256), mat);
-  g.rotation.x = -Math.PI / 2; g.position.copy(v3(c.x, c.y, 0.003)); scene.add(g);
+  g.rotation.x = -Math.PI / 2; g.position.copy(v3(c.x, c.y, 0.003)); TRACK.add(g);
 }
 {
   // central lane into the drag strip
@@ -276,7 +288,7 @@ function ring(c, r, mat, w = 0.15) {
   geo.computeVertexNormals();
   const tex = asphalt.clone(); tex.needsUpdate = true;
   const lane = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-  lane.receiveShadow = true; lane.position.y = 0.001; scene.add(lane);
+  lane.receiveShadow = true; lane.position.y = 0.001; TRACK.add(lane);
   stripe(x0, PG.bumpY - 4, x1, PG.bumpY - 4, 0.15); stripe(x0, PG.bumpY + 4, x1, PG.bumpY + 4, 0.15);
   // split-mu lane: left wheel track wet
   wetPlane(PG.x0, PG.x1, PG.splitY, PG.splitY + 5);
@@ -298,7 +310,7 @@ const cones = [];
     m.castShadow = true;
     const x = SLALOM.x0 + i * SLALOM.gap;
     m.position.copy(v3(x, SLALOM.y, 0.35));
-    scene.add(m);
+    TRACK.add(m);
     cones.push({ mesh: m, home: m.position.clone(), hit: false, vel: new THREE.Vector3(), spin: 0 });
   }
 }
@@ -316,7 +328,7 @@ function sign(text, x, y, sub = '') {
   board.rotation.y = -Math.PI / 2; // faces the approaching car (+x travel)
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.9), new THREE.MeshStandardMaterial({ color: '#888' }));
   post.position.copy(v3(x, y, 0.95)); post.castShadow = true;
-  scene.add(board, post);
+  TRACK.add(board, post);
 }
 document.fonts?.ready.then(() => {
   sign('STRAIGHT', -12, 9, '8 km · top speed');
@@ -572,11 +584,34 @@ function updateLights(brake) {
 }
 let phTail = null;
 
+// ---------- City (world=city) ----------
+let CITY = null, nameAt = null;
+if (WORLD === 'city') {
+  try {
+    CITY = await loadCity({ scene, M, loader: new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), mobile: MOBILE, asphalt, status: (t) => { $('loadMsg').textContent = t; } });
+    nameAt = streetNamer(CITY.info.streets);
+    scene.fog = new THREE.Fog(SKY, 140, MOBILE ? 420 : 620);
+  } catch (e) {
+    console.error('city failed to load', e);
+    $('loadMsg').textContent = 'The city could not be loaded (' + e.message + '). Opening the test track.';
+    setTimeout(() => switchWorld('track'), 1800);
+    await new Promise(() => {});
+  }
+}
+
 // The track itself shouldn't mirror the sky: keep its reflections subtle.
 scene.traverse((o) => { if (o.isMesh && o.material?.isMeshStandardMaterial) o.material.envMapIntensity = 0.3; });
 
 // ---------- Create car ----------
-const ZONES = [
+const CITY_ZONES = CITY ? [
+  { name: 'Av. Paulista · MASP', x: CITY.info.spawn.x, y: CITY.info.spawn.y, yaw: (CITY.info.spawn.yaw * Math.PI) / 180 },
+  { name: 'Under MASP', x: -12, y: 12, yaw: -0.73 },
+  { name: 'Paulista → Paraíso', x: -150, y: 87, yaw: -0.74 },
+  { name: 'Rua Itapeva', x: 115, y: -97.5, yaw: 0.73 },
+  { name: 'Viaduto Tranchesi', x: 118, y: 61, yaw: 2.40 },
+  { name: 'Av. Nove de Julho (valley)', x: 88, y: 102, yaw: 1.035 },
+] : null;
+const ZONES = CITY_ZONES || [
   { name: 'Proving ground', x: -462, y: 0, yaw: 0 },
   { name: 'Drag strip', x: 0, y: 0, yaw: 0 },
   { name: 'Bump course', x: -452, y: PG.bumpY, yaw: 0 },
@@ -589,7 +624,7 @@ const ZONES = [
 ];
 function createCar() {
   applyAids();
-  if (!M._ord_create(settings.car, 0, 0, 0)) { toast('Vehicle definition rejected by the physics core'); return; }
+  if (!M._ord_create(settings.car, ZONES[0].x, ZONES[0].y, ZONES[0].yaw)) { toast('Vehicle definition rejected by the physics core'); return; }
   // Settle on the brakes so the rest pose is the loaded suspension.
   for (let i = 0; i < 90; ++i) { M._ord_set_input(0, 0, 1, 0, 0, 0); M._ord_advance(1 / 60); }
   restWheelZ = [0, 1, 2, 3].map((w) => W(w, 2));
@@ -610,6 +645,11 @@ function placeAt(z) {
 for (const z of ZONES) {
   const b = document.createElement('button'); b.textContent = z.name; b.onclick = () => { placeAt(z); b.blur(); };
   $('zones').append(b);
+}
+for (const [w, label] of [['city', 'São Paulo · MASP'], ['track', 'Test track']]) {
+  const b = $(w === 'city' ? 'wCity' : 'wTrack');
+  b.setAttribute('aria-pressed', WORLD === w);
+  b.onclick = () => { if (WORLD !== w) switchWorld(w); };
 }
 
 // ---------- Aids & presets ----------
@@ -868,8 +908,9 @@ gg.innerHTML = `<circle r="40" fill="none" stroke="rgba(255,255,255,.25)"/><circ
 <text x="0" y="-42" fill="rgba(255,255,255,.45)" font-size="8" text-anchor="middle">1 g</text>
 <polyline id="ggTrail" fill="none" stroke="rgba(255,211,107,.45)" stroke-width="1.5"/><circle id="ggDot" r="4" fill="#ffd36b"/>`;
 const trail = [];
+let odo = 0, lastImpact = 0;
 const timers = { vmax: 0, t0: null, best0100: null, last0100: null, brakeStart: null, last1000: null, maxLat: 0, slalomStart: null, slalomLast: null, conesHit: 0 };
-function resetTimers() { Object.assign(timers, { vmax: 0, t0: null, last0100: null, brakeStart: null, last1000: null, maxLat: 0, slalomStart: null, slalomLast: null, conesHit: 0 }); trail.length = 0; }
+function resetTimers() { odo = 0; lastImpact = 0; Object.assign(timers, { vmax: 0, t0: null, last0100: null, brakeStart: null, last1000: null, maxLat: 0, slalomStart: null, slalomLast: null, conesHit: 0 }); trail.length = 0; }
 let latF = 0, lonF = 0;
 
 function updateHud(dt, inp) {
@@ -911,6 +952,7 @@ function updateHud(dt, inp) {
   if (timers.brakeStart && Math.abs(v) < 0.2) { timers.last1000 = Math.hypot(x - timers.brakeStart.x, y - timers.brakeStart.y); timers.brakeStart = null; }
   if (Math.abs(v) > 5) timers.maxLat = Math.max(timers.maxLat, Math.abs(latF));
   timers.vmax = Math.max(timers.vmax, v * 3.6);
+  odo += Math.abs(v) * dt;
   // slalom gate timing
   const inLane = Math.abs(y - SLALOM.y) < 6;
   if (inLane && timers.slalomStart === null && x > SLALOM.x0 - 2 && x < SLALOM.x0) { timers.slalomStart = t; timers.conesHit = 0; }
@@ -923,16 +965,19 @@ function updateHud(dt, inp) {
   $('hTimers').innerHTML =
     `<span>0–100 km/h</span> <b>${fmt(timers.last0100)} s</b>${timers.best0100 ? ` <span>best ${fmt(timers.best0100)}</span>` : ''}<br>` +
     `<span>100–0 km/h</span> <b>${fmt(timers.last1000, 1)} m</b><br>` +
-    `<span>Top speed</span> <b>${fmt(timers.vmax, 0)} km/h</b> <span>${(Math.max(0, S(0)) / 1000).toFixed(2)} km</span><br>` +
+    `<span>Top speed</span> <b>${fmt(timers.vmax, 0)} km/h</b> <span>${((CITY ? odo : Math.max(0, S(0))) / 1000).toFixed(2)} km</span><br>` +
     `<span>Lateral</span> <b>${fmt(Math.abs(latF))} g</b> <span>max ${fmt(timers.maxLat)}</span><br>` +
     (onSkid ? `<span>Skidpad radius</span> <b>${fmt(Math.abs(v / (S(9) || 1e-6)), 1)} m</b><br>` : '') +
-    `<span>Slalom</span> <b>${timers.slalomLast ? fmt(timers.slalomLast.time) + ' s' : '—'}</b>${timers.slalomLast ? ` <span>${timers.slalomLast.cones} cones</span>` : ''}<br>` +
+    (CITY ? `<span>Last impact</span> <b>${lastImpact ? fmt(lastImpact * 3.6, 0) + ' km/h' : '—'}</b><br>`
+      : `<span>Slalom</span> <b>${timers.slalomLast ? fmt(timers.slalomLast.time) + ' s' : '—'}</b>${timers.slalomLast ? ` <span>${timers.slalomLast.cones} cones</span>` : ''}<br>`) +
     `<span>Sideslip</span> <b>${fmt((S(10) * 180) / Math.PI, 1)}°</b>`;
 }
 
 // zone banner
 let currentZone = '';
+let nameTick = 0, lastName = '';
 function zoneAt(x, y) {
+  if (CITY) { if (++nameTick % 15 === 0) lastName = nameAt(x, y); return lastName; }
   if (x > PG.x0 - 5 && x < PG.x1 + 5 && Math.abs(y - PG.bumpY) < 5) return 'Bump course';
   if (x > PG.x0 - 5 && x < PG.x1 + 5 && Math.abs(y - PG.splitY) < 5) return 'Split-µ';
   if (Math.abs(Math.hypot(x - PG.dry.x, y - PG.dry.y) - PG.dry.r) < 7) return 'Skidpad · R30';
@@ -1076,6 +1121,7 @@ function resetSkidTrail() { skid.last = [null, null, null, null]; }
 // ---------- Sound ----------
 const audio = new CarAudio();
 window.__spwAudio = audio; // for debugging in the console
+window.__spwState = () => ({ pos: [S(0), S(1), S(2)], v: S(7), rpm: S(14), gear: S(15), thr: S(17), tcs: S(18), contact: [0, 1, 2, 3].map((w) => W(w, 11)), impact: S(31) });
 window.__spwPlace = (x, y = 0, yaw = 0) => placeAt({ x, y, yaw });
 audio.enabled = store.get('sound', true); audio.volume = store.get('volume', 0.8);
 async function unlockAudio() {
@@ -1133,6 +1179,8 @@ function frame(now) {
   const inp = readInput(dt, S(15), S(7));
   M._ord_set_input(inp.steer, inp.throttle, inp.brake, inp.hand, inp.shiftUp ? 1 : 0, inp.shiftDown ? 1 : 0);
   M._ord_advance(dt);
+  const hit = S(31);
+  if (hit > 1.2) { lastImpact = hit; try { audio.impact(Math.min(1, hit / 12)); } catch { /* audio not ready */ } }
   if (S(23)) { toast('The simulation faulted (non-finite state). Resetting.'); placeAt(ZONES[0]); }
   // car pose: ISO quaternion (w,x,y,z) -> three (w, x, z, -y)
   qIso.set(S(4), S(6), -S(5), S(3));
