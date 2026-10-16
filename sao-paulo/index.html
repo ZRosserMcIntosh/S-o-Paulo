@@ -70,7 +70,10 @@ section{padding-block:clamp(56px,8vw,96px);border-top:1px solid var(--line)}
 @media (max-width:820px){.sechead{grid-template-columns:1fr}}
 .sechead p{color:var(--mute)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border-block:1px solid var(--line)}
-.stat{padding:20px 18px;border-right:1px solid var(--line)}
+.stat{padding:20px 18px;border-right:1px solid var(--line)}.stat small{display:block;font:500 11.5px var(--mono);color:var(--mute);margin-top:6px}
+.blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:26px}@media (max-width:760px){.blocks{grid-template-columns:1fr}}
+.blockcard h3{margin:4px 0 2px}.blockcard .area{color:var(--mute);font-size:14px}.blockcard .pill{display:inline-block;font:600 12px var(--mono);border-radius:99px;padding:3px 10px;margin-top:10px}
+.blockcard .kv{margin-top:14px}
 .stat:last-child{border-right:0}
 .stat b{display:block;font:800 clamp(34px,4vw,48px)/1 var(--display);font-variant-numeric:tabular-nums}
 .stat span{font-size:13px;color:var(--mute)}
@@ -149,7 +152,7 @@ footer .row{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-betw
 .topbar nav{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:flex-end;font:600 13.5px var(--body)}
 .topbar nav a:not(.drivebtn){color:var(--ink);text-decoration:none}.topbar nav a:not(.drivebtn):hover{color:var(--plate)}
 .drivebtn{display:inline-flex;align-items:center;gap:12px;background:var(--masp);color:#fff;text-decoration:none;border-radius:8px;padding:10px 18px 10px 12px;font:600 14px var(--body);box-shadow:0 12px 26px -16px rgba(210,42,31,.95)}
-.drivebtn:hover{filter:brightness(1.08)}.drivebtn:focus-visible,.ghost:focus-visible,.topbar a:focus-visible{outline:2px solid var(--plate);outline-offset:3px}
+.drivebtn:hover{filter:brightness(1.08)}@media (max-width:700px){.navfly{display:none}}.drivebtn.fly{background:var(--plate);box-shadow:0 12px 26px -16px rgba(29,87,194,.95)}.drivebtn:focus-visible,.ghost:focus-visible,.topbar a:focus-visible{outline:2px solid var(--plate);outline-offset:3px}
 .drivebtn .ico{width:30px;height:30px;flex:none;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:12px}
 .drivebtn b{display:block;font:800 20px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}.drivebtn small{display:block;font:500 12px/1.3 var(--body);opacity:.92;margin-top:3px}
 .drivebtn.sm{padding:6px 14px 6px 8px;gap:8px}.drivebtn.sm .ico{width:22px;height:22px;font-size:9px}.drivebtn.sm b{font-size:16px}
@@ -194,16 +197,16 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 </head>
 <body>
 
-<header class="hero"><div class="wrap topbar"><nav aria-label="Sections"><a href="#film">Film</a><a href="#explore">Map &amp; tiles</a><a href="#north">North block</a><a href="#metro">Metrô</a><a href="#qa">Quality</a><a href="physics/">Physics engine</a><a class="drivebtn sm" href="driving/"><span class="ico" aria-hidden="true">▶</span><b>Drive the car</b></a></nav></div>
+<header class="hero"><div class="wrap topbar"><nav aria-label="Sections"><a href="#film">Film</a><a href="#explore">Map &amp; tiles</a><a href="#north">The blocks</a><a href="#metro">Metrô</a><a href="#qa">Quality</a><a href="physics/">Physics engine</a><a class="navfly" href="flying/">Fly the 172</a><a class="drivebtn sm" href="driving/"><span class="ico" aria-hidden="true">▶</span><b>Drive the car</b></a></nav></div>
 <div class="wrap herotop">
   <div>
     <div class="eyebrow">An open-world game, one tile at a time</div>
-    <div style="margin-top:18px"><div class="plate"><b>São Paulo<br>World</b><span>Centro · Paulista · Pinheiros · Ibirapuera &nbsp;1 : 1</span></div></div>
+    <div style="margin-top:18px"><div class="plate"><b>São Paulo<br>World</b><span>Centro · Paulista · Pinheiros · Zona Norte &nbsp;1 : 1</span></div></div>
   </div>
   <div>
     <p class="lede joke">Have you ever taken a Vyvanse, but before it hit you forgot you took it, so you took a second Vyvanse? Then next thing you know you have a 1:1 render of São Paulo? <em>Yeah, me neither.</em></p>
-    <p class="sublede">A block-by-block rebuild of São Paulo for an open-world driving game: 144 km² of the real city from public survey data, with every building footprint, street tree, lamp post and named street, plus the Metrô running underneath at its real depth.</p>
-    <div class="ctas"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Drive the car</b><small>Vehicle physics test track, in your browser</small></span></a><a class="ghost" href="#film">▶ Watch the 30-second film</a><a class="ghost" href="#north" id="northlink">North block: building now</a></div>
+    <p class="sublede">A block-by-block rebuild of São Paulo for an open-world driving game: 288 km² of the real city, built in blocks of 576 tiles from public survey data, with every building footprint, street tree, lamp post and named street, plus the Metrô running underneath at its real depth.</p>
+    <div class="ctas"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Drive the car</b><small>Vehicle physics test track, in your browser</small></span></a><a class="drivebtn fly" href="flying/"><span class="ico" aria-hidden="true">▲</span><span><b>Fly the 172</b><small>Flight test bed over the city, in your browser</small></span></a><a class="ghost" href="#film">▶ Watch the 30-second film</a><a class="ghost" href="#north" id="northlink">Two blocks built: 1,152 tiles</a></div>
     <div class="facts" id="facts"></div>
   </div>
 </div>
@@ -246,12 +249,13 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 
 
 <section id="north"><div class="wrap">
-  <div class="sechead"><div><div class="eyebrow" id="n_eyebrow">Building now</div><h2>The north block</h2></div>
-    <p>576 more tiles north of the map: Barra Funda and Casa Verde, up through Santana, Freguesia do Ó and Brasilândia to Tremembé and the edge of the Cantareira forest. This first pass builds each tile end to end (terrain, streets, buildings, trees, poles, house detail). The automatic repair and QA passes that took the original map to grade A come afterwards.</p></div>
+  <div class="sechead"><div><div class="eyebrow" id="n_eyebrow">Two blocks built</div><h2>1,152 tiles, two blocks</h2></div>
+    <p>The map grows in blocks of 576 tiles, 12 × 12 km each. Block 1, the original map from Lapa to Ipiranga, has been through the automatic repair passes and every tile is grade A. Block 2 sits directly north of it: Barra Funda and Casa Verde, up through Santana, Freguesia do Ó and Brasilândia to Tremembé and the edge of the Cantareira forest. Its first pass is built, every tile end to end; the same repair passes come next.</p></div>
+  <div class="blocks" id="blocks"></div>
   <div class="nblock">
-    <div><svg id="ngrid" viewBox="0 0 480 480" role="img" aria-label="North block build progress, one square per tile, north up"></svg>
-      <div class="nkey"><span><i style="background:var(--good)"></i>Built (with its render once checked)</span><span><i style="background:var(--plate)"></i>Building at the snapshot</span><span><i style="background:var(--line)"></i>Not built yet</span></div></div>
-    <div class="panel"><div class="eyebrow" id="n_when"></div><div class="big" id="n_big" style="margin-top:10px">–<small>of 576 north tiles built</small></div><div class="prog"><i id="n_prog"></i></div>
+    <div><svg id="ngrid" viewBox="0 0 480 480" role="img" aria-label="Both blocks, one square per tile, north up: block 2 above block 1"></svg>
+      <div class="nkey"><span><i style="background:var(--good)"></i>Block 1 · grade A</span><span><i style="background:#ffd36b"></i>Block 2 · first pass</span><span><i style="background:var(--line)"></i>Not built yet</span></div></div>
+    <div class="panel"><div class="eyebrow" id="n_when"></div><div class="big" id="n_big" style="margin-top:10px">–<small>of 576 block 2 tiles built</small></div><div class="prog"><i id="n_prog"></i></div>
       <div class="kv" id="n_kv"></div>
       <p style="margin-top:16px;color:var(--mute);font-size:14px" id="n_note"></p>
       <p style="margin-top:12px"><a class="ghost" href="#explore" id="n_map">See it on the map ↑</a></p></div>
@@ -266,7 +270,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
       <div><div class="plate sm"><b>Rosser V8</b><span>9,000 rpm · 7-speed dual clutch</span></div></div>
       <div class="spec"><div><b>3.8 s</b><span>0–100 km/h</span></div><div><b>~330</b><span>km/h flat out</span></div><div><b>1,480</b><span>kg · 42 / 58</span></div><div><b>360 Hz</b><span>physics step</span></div></div>
       <ul><li><b>Proving ground</b>, where you start: a bump course, wet and dry skidpads, a split-µ strip and a slalom</li><li><b>Drag strip</b> for launches and top speed</li><li><b>Fun, Sport, Simulation</b>: the driver aids change, the grip stays the same</li><li>Engine sound synthesised live from rpm and load, skid marks, and telemetry you can download as CSV</li></ul>
-      <div class="ctas" style="margin-top:0"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Start driving</b><small>Desktop, gamepad or phone · turn the sound on</small></span></a></div>
+      <div class="ctas" style="margin-top:0"><a class="drivebtn" href="driving/"><span class="ico" aria-hidden="true">▶</span><span><b>Start driving</b><small>Desktop, gamepad or phone · turn the sound on</small></span></a><a class="drivebtn fly" href="flying/"><span class="ico" aria-hidden="true">▲</span><span><b>Or fly the 172</b><small>Take off from Campo de Marte</small></span></a></div>
     </div>
     <div style="display:grid;gap:18px;align-content:start">
     <div class="panel engcard"><div class="eyebrow">The engine underneath</div><h3 style="margin-top:8px">OpenRoad Dynamics</h3>
@@ -300,7 +304,7 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 
 <section id="metro"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">Underground</div><h2>The Metrô, at its real depth</h2></div>
-    <p>Eight lines run through the map in their own geometry layer: tunnels, viaducts, 67 station stops and 139 street entrances. Depths come from published figures where they exist (Paulista sits 55.8 m down) and line-typical values elsewhere. Every station is walkable: real stairs, escalators, fare lines and platforms.</p></div>
+    <p id="metrop">Fourteen lines run through both blocks in their own geometry layer (Metrô, CPTM trains, the airport express and the Line 17 monorail): tunnels, viaducts, 103 station stops and 169 street entrances. Depths come from published figures where they exist (Line 6's Itaberaba–Hospital Vila Penteado sits 65.7 m down) and line-typical values elsewhere. The stations are walkable: real stairs, escalators, fare lines and platforms. The plan below shows block 1; the full network is on the map's Metrô layer.</p></div>
   <div class="metro">
     <div class="panel"><div class="chips" id="lchips"></div><svg id="plan" viewBox="0 0 600 600" role="img" aria-label="Metro and CPTM lines over the city"></svg><div class="stlist" id="stinfo">Hover a station · names show for the selected line.</div></div>
     <div class="panel"><div class="eyebrow" style="margin-bottom:8px">Track profile · metres relative to MASP street level</div><div class="prof"><svg id="prof" viewBox="0 0 760 330" role="img" aria-label="Vertical profile of the selected line"></svg></div></div>
@@ -350,8 +354,8 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 </div></section>
 
 <section id="qa"><div class="wrap">
-  <div class="sechead"><div><div class="eyebrow">Quality</div><h2>576 tiles, checked by machine</h2></div>
-    <p>Every 500 m tile is opened headless and inspected for objects standing in the road, floating buildings, terrain poking through asphalt, missing bridges and seams with its neighbours. Then eight automatic repair passes run, and the tile is checked again. The goal is every tile at grade A: deep green.</p></div>
+  <div class="sechead"><div><div class="eyebrow">Quality</div><h2>Block 1: 576 tiles, checked by machine</h2></div>
+    <p>Every 500 m tile is opened headless and inspected for objects standing in the road, floating buildings, terrain poking through asphalt, missing bridges and seams with its neighbours. Then eight automatic repair passes run, and the tile is checked again. The goal is every tile at grade A: deep green. Block 1 got there on 13 October; block 2 goes through the same passes next.</p></div>
   <div class="qa">
     <div class="panel">
       <div class="eyebrow">Grade distribution after each repair pass</div><div class="hist" id="hist" style="margin-top:12px"></div><div class="eyebrow" style="margin-top:22px">Now</div>
@@ -380,9 +384,9 @@ kbd{font:600 11.5px var(--mono);border:1px solid var(--line);border-bottom-width
 
 <section id="next"><div class="wrap">
   <div class="sechead"><div><div class="eyebrow">What comes next</div><h2>Four times the city</h2></div>
-    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side. The north block (Santana, Casa Verde, Tremembé) has its first pass built; the east (Mooca, Tatuapé, Vila Prudente) and the north-east (Vila Maria, Penha, the edge of Guarulhos) follow.</p></div>
+    <p>The plan is to grow the 24 × 24 grid to 48 × 48 tiles, 24 km on a side. Two of the four blocks are built: the original map and the north block (Santana, Casa Verde, Tremembé). The east block (Mooca, Tatuapé, Vila Prudente) is being built now, and the north-east (Vila Maria, Penha, the edge of Guarulhos) follows.</p></div>
   <div class="expgrid">
-    <div class="panel"><svg id="expmap" viewBox="0 0 480 480" role="img" aria-label="Current map and the three planned blocks"></svg></div>
+    <div class="panel"><svg id="expmap" viewBox="0 0 480 480" role="img" aria-label="The built blocks and the planned ones"></svg></div>
     <div class="panel tblwrap"><table class="etable" id="etab"></table><p style="margin-top:14px;color:var(--mute);font-size:14px">Tiles inside the city use the same GeoSampa survey layers as today. Tiles outside it (São Caetano, Santo André, Guarulhos) will be built from OpenStreetMap alone, with a coarser terrain model.</p></div>
   </div>
 </div></section>
@@ -408,10 +412,13 @@ const N=D.north||null, NT=N?N.tiles:[], NJ0=7, NJ1=N?D.world[3]:J1; NT.forEach(t
 const [wI0,wI1,wJ0,wJ1]=D.world||D.grid, MX0=wI0*500-250, MX1=wI1*500+250, MY0=wJ0*500-250, MY1=wJ1*500+250, MW=MX1-MX0, MH=MY1-MY0;
 const T=D.tot, ST=D.streets_tot, green=(T.grades.A||0);
 const stops=D.lines.reduce((a,l)=>a+l.st.length,0);
-$("facts").innerHTML=`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span>${N?`<span><b>+${N.built}</b> north tiles built</span>`:""}<span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
-if(N)$("northlink").textContent=`North block: ${N.built} of 576 tiles built`;
-const stats=[[T.buildings,"buildings"],[T.trees,"street & park trees"],[T.poles,"utility poles"],[ST.streets,"named streets"],[ST.intersections,"crossings with name plates"],[stops,"rail station stops"]];
-$("stats").innerHTML=stats.map(([v,l])=>`<div class="stat"><b>${fmt(v)}</b><span>${l}</span></div>`).join("");
+const WT=D.world_tot||null;
+$("facts").innerHTML=WT?`<span><b>${fmt(WT.tiles)}</b> tiles of 500 m</span><span><b>2</b> blocks of 576</span><span><b>${MW/1000}×${MH/1000}</b> km</span><span><b>${WT.lines}</b> rail lines</span><span><b>${fmt(WT.streets)}</b> named streets</span>`:`<span><b>${D.tiles.length}</b> tiles of 500 m</span><span><b>${W/1000}×${H/1000}</b> km</span>${N?`<span><b>+${N.built}</b> north tiles built</span>`:""}<span><b>${D.lines.length}</b> rail lines</span><span><b>${fmt(ST.streets)}</b> named streets</span>`;
+if(WT)$("northlink").textContent=`Two blocks built: ${fmt(WT.tiles)} tiles`;
+const k_=n=>n>=1e4?Math.round(n/1e3)+"k":fmt(n);
+const stats=WT&&N?[[WT.buildings,"buildings",`${k_(T.buildings)} block 1 · ${k_(N.buildings)} block 2`],[WT.trees,"street & park trees",`${k_(T.trees)} · ${k_(N.trees)}`],[WT.poles,"utility poles",`${k_(T.poles)} · ${k_(N.poles)}`],[WT.streets,"named streets",`${fmt(ST.streets)} · ${fmt(N.streets)}, some in both`],[WT.km2,"km² of the city","144 · 144"],[WT.stops,"rail station stops",`${WT.lines} lines · ${WT.entrances} entrances`]]
+  :[[T.buildings,"buildings"],[T.trees,"street & park trees"],[T.poles,"utility poles"],[ST.streets,"named streets"],[ST.intersections,"crossings with name plates"],[stops,"rail station stops"]];
+$("stats").innerHTML=stats.map(([v,l,b])=>`<div class="stat"><b>${fmt(v)}</b><span>${l}</span>${b?`<small>${b}</small>`:""}</div>`).join("");
 $("sfacts").innerHTML=`<span><b>${fmt(ST.streets)}</b> streets</span><span><b>${Math.round(100*ST.with_codlog/ST.streets)}%</b> matched to the official register</span><span><b>${fmt(ST.intersections)}</b> crossings</span><span><b>${ST.areas}</b> neighbourhoods</span>`;
 // grades
 const GC={A:"#1f9d63",B:"#8cc152",C:"#e5b62a",D:"#e5832a",F:"#cf3b2f"};
@@ -488,7 +495,7 @@ function showTile(t){selTile=t;
   if(t.north){const km=`${(t.i*0.5).toFixed(1)} km E, ${(t.j*0.5).toFixed(1)} km N of MASP`;$("ex_h").textContent=t.d;$("ex_ph").hidden=!!t.img;$("ex_img").hidden=!t.img;
     const B=t.s==="built";
     if(t.img){$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t}else $("ex_ph").textContent=B?"Built. Its top-down render comes with the next site update":t.s==="building"?"Being built at the time of the snapshot":"Not built yet: queued in the north block build";
-    $("ex_tag").textContent=t.t+" · north block"+(B?", first pass":"");$("ex_area").textContent=t.d+"  ·  "+km+(B?"  ·  repair passes still to come":"");
+    $("ex_tag").textContent=t.t+" · block 2 (north)"+(B?", first pass":"");$("ex_area").textContent=t.d+"  ·  "+km+(B?"  ·  repair passes still to come":"");
     $("ex_kv").innerHTML=B?(t.img?[[fmt(t.b),"buildings"],[fmt(t.tr),"trees"],[fmt(t.po),"poles"]]:[]).concat([[t.st,"named streets"]]).map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join(""):"";
     $("ex_sl").innerHTML=B?(t.sl.map(n=>`<div>${n}</div>`).join("")||"<div>No named streets</div>"):"";loadStreets(t.img?t:null);draw();return}
   $("ex_ph").hidden=true;$("ex_img").hidden=false;$("ex_img").src="tiles/"+t.t+".jpg";$("ex_img").alt="Top-down render of tile "+t.t;$("ex_tag").textContent=t.t+" · grade "+t.g;
@@ -561,32 +568,42 @@ const tot_=g=>["A","B","C","D","F"].reduce((a,k)=>a+(g[k]||0),0);
 $("hist").innerHTML=(D.history||[]).map(h=>{const n=tot_(h.g),gr=(h.g.A||0)+(h.g.B||0);return `<div class="hrow"><div class="lbl"><b>${h.pass}</b><span>${h.what}</span></div><div class="bar">${["A","B","C","D","F"].map(k=>`<div style="width:${100*(h.g[k]||0)/n}%;background:${GC[k]}" title="${k}: ${h.g[k]||0}"></div>`).join("")}</div><div class="pct">${Math.round(100*gr/n)}%</div></div>`}).join("");
 // ---------------- expansion
 (function(){const E=D.expansion||[];const sz=480/48;let h=`<rect width="480" height="480" fill="var(--bg)"/>`;
-  const blk={North:[0,0],Northeast:[24,0],East:[24,24]};
+  const blk={North:[0,0],Northeast:[24,0],East:[24,24]}, WTX=`fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3"`;
   h+=N?`<image href="img/mosaic_world_sm.jpg?v=${N.snapshot}" x="0" y="0" width="${24*sz}" height="${48*sz}" preserveAspectRatio="none"/>`:`<image href="img/mosaic_sm.jpg" x="0" y="${24*sz}" width="${24*sz}" height="${24*sz}"/>`;
-  for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles,live=b.status==="building"&&N;
-    h+=live?`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 4" rx="4"/>`:`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="var(--plate)" opacity="${.18+.5*f}" rx="4"/>`;
-    const tc=live?`fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3"`:`fill="var(--ink)"`;
-    h+=`<text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" ${tc} font-family="var(--display)">${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" ${tc}>${live?`${N.building||N.queued?"building now":"first pass"} · ${b.built} of ${b.tiles} built`:`${b.inside} of ${b.tiles} tiles inside the city`}</text>`}
-  h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="#000" stroke-width="3">TODAY · 576 TILES</text>`;
+  for(const b of E){const [bx,by]=blk[b.b];const f=b.inside/b.tiles,done=b.status==="built"&&N,live=b.status==="building";
+    const R_=(a)=>`<rect x="${bx*sz+1}" y="${by*sz+1}" width="${24*sz-2}" height="${24*sz-2}" ${a}/>`;
+    h+=done?R_(`fill="none" stroke="#ffd36b" stroke-width="2.5" rx="3"`):R_(`fill="var(--plate)" opacity="${.18+.5*f}" rx="4"`)+(live?R_(`fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 4" rx="4"`):"");
+    const tc=done?WTX:`fill="var(--ink)"`;
+    h+=`<text x="${bx*sz+12*sz}" y="${by*sz+12*sz-6}" text-anchor="middle" font-size="22" font-weight="800" ${tc} font-family="var(--display)">${done?"BLOCK 2 · ":""}${b.b.toUpperCase()}</text><text x="${bx*sz+12*sz}" y="${by*sz+12*sz+16}" text-anchor="middle" font-size="12" ${tc}>${done?`first pass built · ${b.built} of ${b.tiles}`:live?`building now · ${b.built||0} of ${b.tiles}`:`${b.inside} of ${b.tiles} tiles inside the city`}</text>`}
+  h+=`<rect x="1" y="${24*sz+1}" width="${24*sz-2}" height="${24*sz-2}" fill="none" stroke="var(--good)" stroke-width="2.5" rx="3"/><text x="${12*sz}" y="${48*sz-10}" text-anchor="middle" font-size="12" font-weight="700" ${WTX}>BLOCK 1 · 576 TILES · GRADE A</text>`;
   $("expmap").innerHTML=h;
-  $("etab").innerHTML=`<tr><th>Block</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
+  const stx=b=>b.status==="built"?"First pass built":b.status==="building"?`Building now (${b.built||0})`:"Planned";
+  $("etab").innerHTML=`<tr><th>Block</th><th>Status</th><th>Tiles</th><th>In city</th><th>Edge</th><th>Outside</th><th>Districts</th></tr>`+E.map(b=>`<tr><td><b>${b.b}</b></td><td style="font-size:13px">${stx(b)}</td><td>${b.tiles}</td><td>${b.inside}</td><td>${b.partial}</td><td>${b.outside}</td><td style="font-size:13px;color:var(--mute)">${b.districts.slice(0,6).join(", ")}${b.outside_note?` · outside: ${b.outside_note}`:""}</td></tr>`).join("")})();
 // ---------------- film: H.264 MP4 (1080p or 720p by screen width) with a VP9 WebM fallback; plays muted while on screen
 (function(){const v=$("filmv");if(!v)return;let loaded=false;
   const load=()=>{if(loaded)return;loaded=true;const add=(src,type)=>{const e=document.createElement("source");e.src=src;e.type=type;v.appendChild(e)};
     add(window.innerWidth>=900?v.dataset.hd:v.dataset.sd,"video/mp4");add(v.dataset.webm,"video/webm");v.load()};const calm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   new IntersectionObserver(es=>{for(const e of es){if(e.isIntersecting){load();if(!calm)v.play().catch(()=>{})}else if(!v.paused)v.pause()}},{threshold:.35}).observe(v);
   for(const b of document.querySelectorAll(".chapters button"))b.onclick=()=>{load();v.currentTime=parseFloat(b.dataset.t);v.play().catch(()=>{})}})();
-// ---------------- north block
-(function(){if(!N){$("north").hidden=true;return}const sz=20;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg?v=${N.snapshot}" x="0" y="0" width="480" height="960" preserveAspectRatio="none"/>`;
-  for(const t of NT){const x=(t.i-wI0)*sz,y=(NJ1-t.j)*sz;const B=t.s==="built",f=t.img?"rgba(0,0,0,0)":B?"var(--good)":t.s==="building"?"var(--plate)":"var(--line)";const o=t.img?1:B?.75:t.s==="building"?.95:.9;
-    h+=`<rect class="t" data-t="${t.t}" x="${x+.5}" y="${y+.5}" width="${sz-1}" height="${sz-1}" rx="2" fill="${f}" fill-opacity="${o}" stroke="${B?"rgba(31,157,99,.9)":"none"}" stroke-width="${B?1:0}"><title>${t.t} · ${t.d} · ${B?"built":t.s==="building"?"building":"not built yet"}</title></rect>`}
+// ---------------- the blocks: cards + both blocks on one grid (block 2 above block 1)
+(function(){const BL=D.blocks;if(!BL){$("blocks").hidden=true;return}
+  $("blocks").innerHTML=BL.map(b=>{const A=b.grades?(b.grades.A||0):0;
+    const pill=b.grades?`<span class="pill" style="border:1px solid var(--good)">${A} of ${b.tiles} tiles at grade A · ${b.passes} repair passes</span>`:`<span class="pill" style="border:1px solid #ffd36b">First pass built · repair passes next</span>`;
+    return `<div class="panel blockcard"><div class="eyebrow">${b.name} · ${b.when}</div><h3>${b.sub}</h3><div class="area">${b.area}</div>${pill}<div class="kv">${[[fmt(b.built),"tiles of 500 m"],[fmt(b.buildings),"buildings"],[fmt(b.trees),"trees"],[fmt(b.streets),"named streets"]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("")}</div></div>`}).join("")})();
+(function(){if(!N){$("north").hidden=true;return}const sz=10,ox=120;let h=`<rect width="480" height="480" fill="#141a22"/><image href="img/mosaic_world_sm.jpg?v=${N.snapshot}" x="${ox}" y="0" width="240" height="480" preserveAspectRatio="none"/>`;
+  for(const t of NT){const x=ox+(t.i-wI0)*sz,y=(NJ1-t.j)*sz;const B=t.s==="built";
+    h+=`<rect class="t" data-t="${t.t}" x="${x+.5}" y="${y+.5}" width="${sz-1}" height="${sz-1}" rx="1.5" fill="${t.img?"rgba(0,0,0,0)":"var(--line)"}" fill-opacity="${t.img?1:.9}" stroke="${B?"rgba(255,211,107,.8)":"none"}" stroke-width="${B?.8:0}"><title>${t.t} · ${t.d} · block 2 · ${B?"first pass built":"not built yet"}</title></rect>`}
+  for(const t of D.tiles){const x=ox+(t.i-wI0)*sz,y=(NJ1-t.j)*sz;
+    h+=`<rect class="t" data-t="${t.t}" x="${x+.5}" y="${y+.5}" width="${sz-1}" height="${sz-1}" rx="1.5" fill="rgba(0,0,0,0)" stroke="${GC[t.g]||"#1f9d63"}" stroke-opacity=".85" stroke-width=".8"><title>${t.t} · ${(t.ar||[])[0]||""} · block 1 · grade ${t.g}</title></rect>`}
+  const lab=(y,a,b_)=>`<text x="${ox-12}" y="${y}" text-anchor="end" font-size="17" font-weight="800" fill="#fff" font-family="var(--display)">${a}</text><text x="${ox-12}" y="${y+17}" text-anchor="end" font-size="11" fill="#c9d1db">${b_}</text>`;
+  h+=lab(12*sz,"BLOCK 2","north · first pass")+lab(36*sz,"BLOCK 1","grade A")+`<line x1="${ox}" y1="240" x2="${ox+240}" y2="240" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 3"/>`;
   $("ngrid").innerHTML=h;
   for(const r of $("ngrid").querySelectorAll(".t"))r.onclick=()=>{const t=TL[r.dataset.t];focusTile(t);document.getElementById("explore").scrollIntoView({behavior:"smooth"})};
   const when=new Date(N.snapshot*1000).toLocaleString("en-GB",{timeZone:"America/Sao_Paulo",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
   $("n_when").textContent="Snapshot · "+when+" (São Paulo time)";const done=!N.building&&!N.queued;
-  if(done){$("n_eyebrow").textContent="First pass built";$("northlink").textContent=`North block: ${N.built} of 576 tiles built`}$("n_big").firstChild.textContent=N.built;$("n_prog").style.width=(100*N.built/576)+"%";
-  $("n_kv").innerHTML=[[fmt(N.buildings),`buildings in the ${N.with_img} tiles checked so far`],[fmt(N.trees),"trees in those tiles"],[fmt(N.poles),"poles in those tiles"],[fmt(N.streets),`named streets in all ${N.built} built tiles`]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("");
-  $("n_note").textContent=`Built column by column outward from MASP's meridian, ${N.rate?`about ${Math.round(N.rate)} tiles an hour `:""}on one laptop. ${N.failed?`${N.failed} tiles, mostly forest along the top edge, wait for a fix in the street builder. `:""}Click a built square to open it in the tile explorer.`;
+  $("n_big").firstChild.textContent=N.built;$("n_prog").style.width=(100*N.built/576)+"%";
+  $("n_kv").innerHTML=[[fmt(N.buildings),"buildings in block 2"],[fmt(N.trees),"trees"],[fmt(N.poles),"utility poles"],[fmt(N.streets),"named streets"]].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join("");
+  $("n_note").textContent=`Block 2 was built column by column outward from MASP's meridian, ${N.rate?`about ${Math.round(N.rate)} tiles an hour `:""}on one laptop. ${N.failed?`${N.failed} tiles, mostly forest along the top edge, wait for a fix in the street builder. `:""}Click a built square to open it in the tile explorer.`;
   $("n_map").onclick=e=>{e.preventDefault();document.getElementById("mapcard").scrollIntoView({behavior:"smooth",block:"center"});showNorth()};})();
 })();
 </script>
